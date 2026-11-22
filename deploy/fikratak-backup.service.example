@@ -1,0 +1,20 @@
+[Unit]
+Description=Encrypted off-host SQLite backup for FKRETK Influencer CRM
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=fikratak
+Group=fikratak
+WorkingDirectory=/opt/fikratak
+EnvironmentFile=/etc/fikratak/fikratak.env
+Environment=HOME=/var/lib/fikratak
+ExecStart=/bin/bash /opt/fikratak/scripts/backup-offsite.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fikratak/data /var/backups/fikratak
+ReadOnlyPaths=/var/lib/fikratak/.ssh

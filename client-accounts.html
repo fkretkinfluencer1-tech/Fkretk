@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2D82C4">
+  <title>حسابات العملاء | فكرتك</title>
+  <link rel="stylesheet" href="/assets/client-accounts.css?v=2.0.0">
+  <link rel="stylesheet" href="/assets/fikratak-design.css?v=2.0.0">
+</head>
+<body>
+  <header><div class="head"><div class="brand"><img src="/assets/fikratak-digital-logo.png" alt="فكرتك"><div><strong>إدارة حسابات العملاء</strong><small>حسابات بوابة العملاء والحملات المرتبطة</small></div></div><a class="button secondary" href="/">العودة للنظام</a></div></header>
+  <main>
+    <div id="denied" class="panel hidden"><h1>يلزم تسجيل الدخول</h1><p class="muted">سجّل الدخول إلى نظام فكرتك ثم افتح إدارة حسابات العملاء مجددًا.</p><a class="button primary" href="/">الانتقال للنظام</a></div>
+    <div id="workspace" class="layout hidden">
+      <section class="panel" id="editor-panel">
+        <h1 id="form-title">إنشاء حساب عميل</h1><p class="muted">تُخزّن كلمات المرور بتجزئة آمنة. العروض مستقلة عن الحملات، واربط بالحساب ما تسمح له الصفحة برؤيته فقط.</p>
+        <form id="account-form" class="form">
+          <label class="field">اسم العميل<input name="clientName" required maxlength="100"></label>
+          <label class="field">اسم الشركة<input name="companyName" required maxlength="150"></label>
+          <label class="field">البريد الإلكتروني<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+          <label class="field">طريقة عرض العميل
+            <select name="displayMode" required>
+              <option value="prospective">عميل محتمل</option>
+              <option value="selecting">عميل بيختار معلنين</option>
+              <option value="existing">عميل موجود بالفعل</option>
+            </select>
+          </label>
+          <div class="mode-help" aria-live="polite">
+            <div><strong>عميل محتمل:</strong> عرض المؤثرين المرتبطين فقط دون قرارات أو زيارات.</div>
+            <div><strong>عميل بيختار معلنين:</strong> عرض المرشحين مع قبول/رفض وتراجع، دون قسم الزيارات.</div>
+            <div><strong>عميل موجود بالفعل:</strong> عرض قراءة فقط؛ يظهر جدول الزيارات بعد حفظه ونشره من إدارة الزيارات.</div>
+          </div>
+          <input name="username" type="hidden">
+          <p class="muted">يُستخدم البريد الإلكتروني لتسجيل الدخول، ويُنشأ اسم مستخدم داخلي تلقائيًا للتوافق مع الحسابات القديمة.</p>
+          <label class="field">كلمة المرور <small id="password-hint">12 حرفًا على الأقل</small><input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password"></label>
+          <label class="field">ملاحظات داخلية للفريق<input name="internalNotes" maxlength="5000" placeholder="لا تظهر للعميل"></label>
+          <div><p class="muted">عروض المؤثرين الظاهرة لهذا العميل</p><div id="catalog-picker" class="campaign-picker"></div></div>
+          <div><p class="muted">الحملات الظاهرة لهذا العميل</p><div id="campaign-picker" class="campaign-picker"></div></div>
+          <label class="campaign-option"><input type="checkbox" name="active" checked> الحساب نشط</label>
+          <section class="portal-settings" aria-labelledby="portal-settings-title">
+            <h2 id="portal-settings-title">تخصيص صفحة العميل</h2>
+            <label class="field">القالب الأساسي
+              <select class="field-control" name="template">
+                <option value="request-approval">Request for Approval · الموافقة على المؤثرين</option>
+                <option value="visit-schedule">Visit Schedule · جدول الزيارات</option>
+                <option value="delivery-campaign">Delivery Campaign · التوصيل والشحن</option>
+                <option value="campaign-report">Campaign Report · تقرير الحملة</option>
+                <option value="custom-view">Custom View · عرض مخصص</option>
+              </select>
+            </label>
+            <label class="field">حالة الصفحة
+              <select class="field-control" name="portalStatus"><option value="draft">مسودة</option><option value="published">منشورة</option></select>
+            </label>
+            <div><p class="muted">الأقسام وترتيبها — استخدم السهمين لإعادة الترتيب</p><div id="portal-sections" class="section-order"></div></div>
+            <div id="portal-fields"></div>
+            <div><p class="muted">الإجراءات المتاحة للعميل</p><div id="portal-actions" class="config-grid"></div></div>
+            <label class="field">إعادة استخدام قالب محفوظ
+              <select class="field-control" id="saved-template"><option value="">اختر قالبًا محفوظًا</option></select>
+            </label>
+            <div class="tools"><button class="button secondary" id="save-template" type="button">حفظ الإعدادات كقالب</button><button class="button secondary" id="preview-account" type="button">حفظ ومعاينة الصفحة</button></div>
+          </section>
+          <div class="tools"><button id="save-account" class="button primary" type="submit">إنشاء الحساب</button><button id="cancel-edit" class="button secondary hidden" type="button">إلغاء التعديل</button></div>
+        </form><p id="form-message" class="message" role="status" aria-live="polite"></p>
+      </section>
+      <section class="panel"><div class="account-head"><div><h2>حسابات العملاء</h2><p class="muted">لا تعرض هذه القائمة كلمات المرور أو بيانات المؤثرين الخاصة.</p></div></div><div id="accounts" class="accounts"></div></section>
+    </div>
+    <section id="client-workspace-panel" class="panel workspace-panel hidden">
+      <div class="account-head"><div><h2 id="client-workspace-title">مساحة عمل العميل</h2><p id="client-workspace-summary" class="muted"></p></div><button id="close-client-workspace" class="button secondary" type="button">إغلاق</button></div>
+      <div id="client-workspace-content"></div><p id="client-workspace-message" class="message" role="status" aria-live="polite"></p>
+    </section>
+    <footer class="page-footer">FKRETK Digital · إدارة المؤثرين</footer>
+    <dialog id="preview-dialog" class="panel"><div class="account-head"><h2>معاينة بوابة العميل</h2><button class="button secondary" id="close-preview" type="button">إغلاق</button></div><iframe id="preview-frame" class="preview-frame" title="معاينة صفحة العميل"></iframe></dialog>
+  </main>
+  <script src="/assets/i18n.js?v=2.0.0"></script>
+  <script src="/assets/ui.js?v=2.0.0"></script>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const state = { user:null, campaigns:[], catalogs:[], accounts:[], templates:[], editingId:null, config:null, workspaceAccountId:null, visitPreview:null, visitInfluencers:new Map(), visitSearchTimer:null };
+    const sectionLabels = {
+      requestApproval:'طلب الموافقة',
+      visitSchedule:'جدول الزيارات',
+      deliveryCampaign:'حملة التوصيل',
+      campaignReport:'تقرير الحملة'
+    };
+    const fieldLabels = {
+      requestApproval:{name:'اسم المؤثر',username:'اسم المستخدم',platform:'المنصة',accountLink:'رابط الحساب',followers:'عدد المتابعين',price:'السعر',campaignNotes:'ملاحظات الإدارة',decision:'حالة القرار'},
+      visitSchedule:{name:'اسم المؤثر',username:'اسم المستخدم',visitDate:'تاريخ الزيارة',visitTime:'موعد الزيارة',visitCity:'المدينة',visitBranch:'الفرع',visitAddress:'العنوان',visitStatus:'حالة الزيارة',visitNotes:'ملاحظات الزيارة',coverageStatus:'حالة التغطية',coverageNotes:'ملاحظات التغطية'},
+      deliveryCampaign:{name:'اسم المؤثر',username:'اسم المستخدم',recipientName:'اسم المستلم الثنائي',recipientPhone:'جوال المستلم',courierContact:'تواصل الشحن/المندوب',deliveryCity:'المدينة',deliveryDistrict:'الحي',deliveryAddress:'العنوان التفصيلي',deliveryMapLink:'رابط اللوكيشن',orderDetails:'المنتجات/الطلب',shippingStatus:'حالة الشحنة',shippingCarrier:'شركة الشحن',trackingNumber:'رقم التتبع',deliveryDate:'تاريخ التوصيل',deliveryNotes:'ملاحظات الشحن',coverageStatus:'حالة التغطية'},
+      campaignReport:{campaignSummary:'ملخص الحملة',targetCount:'عدد المؤثرين',coverageSummary:'ملخص التغطية',visitSummary:'ملخص الزيارات',deliverySummary:'ملخص التوصيل'}
+    };
+    const actionLabels = {
+      allowDecisions:'السماح بقبول/رفض المؤثرين',
+      allowRevert:'السماح بالتراجع عن القرار',
+      allowVisitConfirmation:'السماح بتأكيد الزيارة',
+      allowVisitChangeRequest:'السماح بطلب تغيير الموعد',
+      allowShippingFollowUp:'السماح بمتابعة/تأكيد الشحن'
+    };
+    async function api(path, options = {}) {
+      const response = await fetch(path,{ credentials:'same-origin',cache:'no-store',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...options.headers} });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(result.error||'تعذر إكمال الطلب.');
+      return result;
+    }
+    function escapeHTML(value) { return String(value??'').replace(/[&<>"']/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]); }
+    function renderCampaignPicker(selected=[]) {
+      const picker=$('#campaign-picker');picker.replaceChildren();
+      if(!state.campaigns.length){picker.innerHTML='<span class="muted">لا توجد حملات بعد؛ أنشئ حملة أولًا من قسم إدارة الحملات.</span>';return;}
+      for(const campaign of state.campaigns){
+        const label=document.createElement('label');label.className='campaign-option';
+        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=campaign.id;checkbox.name='campaignIds';checkbox.checked=selected.includes(campaign.id);
+        const text=document.createElement('span');text.textContent=`${campaign.campaignName} — ${campaign.companyName} (${campaign.campaignType==='mix'?'ميكس':campaign.campaignType==='visit'?'زيارة':'توصيل'})`;
+        label.append(checkbox,text);picker.append(label);
+      }
+    }
+    function renderCatalogPicker(selected=[]) {
+      const picker=$('#catalog-picker');picker.replaceChildren();
+      if(!state.catalogs.length){picker.innerHTML='<span class="muted">لا توجد عروض جاهزة للربط؛ جهّز عرضًا أولًا من قسم عروض العملاء.</span>';return;}
+      for(const catalog of state.catalogs){
+        const label=document.createElement('label');label.className='campaign-option';
+        const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=catalog.id;checkbox.name='catalogIds';checkbox.checked=selected.includes(catalog.id);
+        checkbox.disabled=(catalog.accounts||[]).some(account=>account.id!==state.editingId);
+        const text=document.createElement('span');const owner=(catalog.accounts||[]).map(account=>`مرتبط بـ ${account.clientName}`).join('، ');
+        text.textContent=`${catalog.offerName||catalog.companyName} — ${catalog.companyName} · ${catalog.influencerCount} مؤثر${owner?` · ${owner}`:''}`;
+        label.append(checkbox,text);picker.append(label);
+      }
+    }
+    function decisionLabel(value) {
+      return value==='accepted'?'تم القبول':value==='rejected'?'تم الرفض':value==='reverted'?'تراجع عن القرار':'بانتظار القرار';
+    }
+    function visitProfileText(item) {
+      return (item.profiles||[]).map(profile=>`${profile.platform} @${profile.username}`).join(' · ');
+    }
+    function visitOptionLabel(item) {
+      return `${item.name||'مؤثر'} · ${visitProfileText(item)||'لا يوجد حساب اجتماعي'} · #${String(item.id).slice(0,8)}`;
+    }
+    function registerVisitInfluencer(item) {
+      if(!item?.id)return '';
+      const label=visitOptionLabel(item);
+      state.visitInfluencers.set(item.id,{...item,label});
+      return label;
+    }
+    function visitInfluencerField(item=null, searchExtra='', hiddenExtra='', explicitId='') {
+      const id=explicitId||item?.id||'';
+      const label=item?registerVisitInfluencer(item):'';
+      return `<input type="search" list="visit-influencer-options" data-visit-influencer-search ${searchExtra} autocomplete="off" value="${escapeHTML(label)}" placeholder="ابحث بالاسم أو اسم حساب المنصة">
+        <input type="hidden" name="influencerId" data-visit-influencer-id ${hiddenExtra} value="${escapeHTML(id)}">`;
+    }
+    function visitPreviewTable(preview) {
+      if(!preview)return '';
+      const rows=(preview.rows||[]).map(row=>{
+        for(const candidate of row.candidates||[])registerVisitInfluencer(candidate);
+        const selected=(row.candidates||[]).find(candidate=>candidate.id===row.influencerId);
+        const checked=row.status==='matched'&&row.visitDate&&row.visitTime;
+        return `<tr data-preview-row="${row.rowNumber}">
+          <td>${row.rowNumber}</td><td>${escapeHTML(row.name||row.username||'—')}<small class="muted">${escapeHTML(row.platform||'')} ${escapeHTML(row.reason||row.status)}</small></td>
+          <td>${visitInfluencerField(selected,'data-preview-influencer-search','data-preview-influencer-id',row.influencerId||'')}</td>
+          <td><input type="date" data-preview-date value="${escapeHTML(row.visitDate)}"></td>
+          <td><input type="time" data-preview-time value="${escapeHTML(row.visitTime)}"></td>
+          <td><input data-preview-city maxlength="100" value="${escapeHTML(row.city)}"></td>
+          <td><input data-preview-branch maxlength="150" value="${escapeHTML(row.branch)}"></td>
+          <td><label><input type="checkbox" data-preview-include ${checked?'checked':''}> استيراد</label></td></tr>`;
+      }).join('');
+      return `<div class="notice">المطابقات المؤكدة: ${preview.validRows} · الصفوف غير المحسومة: ${preview.unresolvedRows} (مكرر: ${preview.issues.duplicateRows}، غير صالح: ${preview.issues.invalidRows}، ملتبس: ${preview.issues.ambiguousRows}، غير مطابق: ${preview.issues.unmatchedRows}). التغييرات المتوقعة — إضافة ${preview.changes.added}، تحديث ${preview.changes.updated}، بلا تغيير ${preview.changes.unchanged}، إزالة ${preview.changes.removed}. لا يُحفظ شيء قبل التأكيد. الاسم وحده لا يطابق تلقائيًا.</div>
+        <div class="visit-import-wrap"><table class="visit-import-table"><thead><tr><th>صف</th><th>البيانات الواردة</th><th>المؤثر المطابق (راجع يدويًا)</th><th>التاريخ</th><th>الوقت</th><th>المدينة</th><th>الفرع</th><th>إدراج</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <div class="visit-toolbar"><button class="button primary" type="button" data-import-confirm>تأكيد الاستيراد وحفظ كمسودة</button><button class="button secondary" type="button" data-import-cancel>إلغاء المعاينة</button></div>`;
+    }
+    function visitManagerMarkup(accountId,data) {
+      const visits=data.visits||[];
+      state.visitInfluencers=new Map();
+      const status=data.schedule?.status==='published'?'منشور للعميل':'مسودة — غير ظاهرة للعميل';
+      const profileLinks=visit=>visit.profiles.map(profile=>`${escapeHTML(profile.platform)} · <a href="${escapeHTML(profile.profileUrl)}" target="_blank" rel="noopener noreferrer">@${escapeHTML(profile.username)}</a>`).join('<br>');
+      const cards=visits.map(visit=>`<article class="workspace-card">
+        <form class="visit-edit" data-scheduled-visit data-visit-id="${escapeHTML(visit.id)}">
+          <strong>${escapeHTML(visit.name||'مؤثر')}</strong><small>${profileLinks(visit)||'لا يوجد حساب اجتماعي مسجل'}</small>
+          <label class="field">المؤثر${visitInfluencerField(visit,'required')}</label>
+          <label class="field">التاريخ<input name="visitDate" type="date" required value="${escapeHTML(visit.visitDate)}"></label>
+          <label class="field">الوقت<input name="visitTime" type="time" required value="${escapeHTML(visit.visitTime)}"></label>
+          <label class="field">المدينة<input name="city" maxlength="100" value="${escapeHTML(visit.city)}"></label>
+          <label class="field">الفرع<input name="branch" maxlength="150" value="${escapeHTML(visit.branch)}"></label>
+          <button class="button secondary" type="submit">حفظ التعديل كمسودة</button>
+          <button class="button danger" type="button" data-visit-delete="${escapeHTML(visit.id)}">إزالة الزيارة</button>
+        </form></article>`).join('');
+      return `<section class="workspace-panel" id="visit-manager" data-account-id="${escapeHTML(accountId)}">
+        <h2>إدارة جدول الزيارات</h2><p class="muted">حالة الجدول: <strong>${status}</strong>. يدعم الاستيراد الإضافة والتعديل والإزالة بعد مراجعة الفروقات؛ لا ينشئ مؤثرين ولا يغير بياناتهم.</p>
+        <div class="visit-toolbar"><label class="field">معاينة ملف Excel (.xlsx)<input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" data-visit-file></label>
+        ${data.schedule?.status==='published'?'<button class="button secondary" type="button" data-visit-unpublish>إلغاء النشر وإخفاء الجدول</button>':''}
+        <button class="button primary" type="button" data-visit-publish ${visits.length?'':'disabled'}>نشر الجدول للعميل</button></div>
+        <div id="visit-import-preview">${visitPreviewTable(state.visitPreview)}</div>
+        <h3>إضافة زيارة يدويًا</h3><form class="visit-edit" data-manual-visit>
+          <label class="field">المؤثر${visitInfluencerField(null,'required')}</label>
+          <label class="field">تاريخ الزيارة<input name="visitDate" type="date" required></label>
+          <label class="field">وقت الزيارة<input name="visitTime" type="time" required></label>
+          <label class="field">المدينة<input name="city" maxlength="100"></label>
+          <label class="field">الفرع<input name="branch" maxlength="150"></label>
+          <button class="button secondary" type="submit">إضافة كمسودة</button>
+        </form><h3>الزيارات المسجلة</h3><div class="workspace-grid">${cards||'<p class="empty">لا توجد زيارات محفوظة.</p>'}</div>
+        <datalist id="visit-influencer-options"></datalist>
+      </section>`;
+    }
+    async function loadClientWorkspace(accountId) {
+      const result=await api(`/api/client-accounts/${encodeURIComponent(accountId)}/workspace`);
+      if(state.workspaceAccountId!==accountId)state.visitPreview=null;
+      state.workspaceAccountId=accountId;
+      const account=result.account;
+      const visitManager=account.displayMode==='existing'
+        ? await api(`/api/client-accounts/${encodeURIComponent(accountId)}/visits`) : null;
+      const modeNotice=visitManager?'':`<div class="notice"><strong>إدارة جدول الزيارات مقصورة على «عميل موجود بالفعل».</strong> لم يتغير وضع العميل تلقائيًا. غيّر طريقة العرض صراحةً إذا كان ذلك مناسبًا، ثم أعد فتح مساحة العمل.<div class="tools"><button class="button primary" type="button" data-mode-to-existing>تغيير الوضع إلى عميل موجود بالفعل</button></div></div>`;
+      $('#client-workspace-title').textContent=`مساحة عمل ${account.clientName}`;
+      $('#client-workspace-summary').textContent=`${account.companyName} · ${account.email||'لا يوجد بريد إلكتروني'} · آخر نشاط: ${account.lastActivityAt?new Date(account.lastActivityAt).toLocaleString('ar'):'غير مسجل'}`;
+      const offers=(account.offers||[]).map(offer=>`<article class="workspace-card"><h3>${escapeHTML(offer.offerName||offer.companyName)}</h3><p>${escapeHTML(offer.offerStatus||'')}</p><p>${Number(offer.influencerCount)||0} مؤثر</p></article>`).join('');
+      const campaigns=(result.campaigns||[]).map(campaign=>`<article class="workspace-card"><h3>${escapeHTML(campaign.campaignName)}</h3><p>${escapeHTML(campaign.companyName)} · ${campaign.campaignType==='mix'?'ميكس':campaign.campaignType==='visit'?'زيارة':'توصيل'}</p><p>${escapeHTML(campaign.startDate)} — ${escapeHTML(campaign.endDate)}</p></article>`).join('');
+      const statusOptions=[['pending_confirmation','بانتظار التأكيد'],['confirmed','مؤكدة'],['completed','تمت'],['cancelled','ملغاة']];
+      const visits=(result.visits||[]).map(visit=>`<article class="workspace-card">
+        <h3>${escapeHTML(visit.influencerName||'مؤثر')} ${visit.username?`· @${escapeHTML(visit.username.replace(/^@/,''))}`:''}</h3>
+        <p>${escapeHTML(visit.campaignName)} · ${escapeHTML(visit.city)} · ${escapeHTML(visit.branch)}</p>
+        <form class="visit-edit" data-client-visit data-campaign-id="${escapeHTML(visit.campaignId)}" data-influencer-id="${escapeHTML(visit.influencerId)}">
+          <label class="field">التاريخ<input name="visitDate" type="date" required value="${escapeHTML(visit.visitDate)}"></label>
+          <label class="field">الوقت<input name="visitTime" type="time" value="${escapeHTML(visit.visitTime)}"></label>
+          <label class="field">المدينة<input name="visitCity" maxlength="100" value="${escapeHTML(visit.city)}"></label>
+          <label class="field">الفرع<input name="visitBranch" maxlength="150" value="${escapeHTML(visit.branch)}"></label>
+          <label class="field">العنوان<input name="visitAddress" maxlength="500" value="${escapeHTML(visit.address)}"></label>
+          <label class="field">حالة الزيارة<select name="visitStatus">${statusOptions.map(([value,label])=>`<option value="${value}" ${visit.status===value?'selected':''}>${label}</option>`).join('')}</select></label>
+          <label class="field">ملاحظات الزيارة<input name="visitNotes" maxlength="2000" value="${escapeHTML(visit.notes)}"></label>
+          <button class="button secondary" type="submit">حفظ الزيارة</button>
+        </form></article>`).join('');
+      const history=(result.decisionHistory||[]).map(entry=>`<article class="workspace-card"><p>${escapeHTML(entry.subject)} · ${escapeHTML(entry.influencerName||'مؤثر')}</p><p>${escapeHTML(entry.actor||'')} · ${escapeHTML(decisionLabel(entry.decision))} · ${new Date(entry.createdAt).toLocaleString('ar')}</p></article>`).join('');
+      const activityLabels={account_created:'إنشاء حساب العميل',account_updated:'تعديل بيانات الحساب',visit_updated:'تحديث موعد الزيارة',campaign_target_updated:'تحديث بيانات تنفيذ الحملة',showcase_feedback_updated:'مفضلة أو ملاحظة العميل على مؤثر'};
+      const activity=(result.activity||[]).map(entry=>`<article class="workspace-card"><p>${escapeHTML(activityLabels[entry.eventType]||entry.eventType)}</p><p>${escapeHTML(entry.actorUsername||'')} · ${new Date(entry.createdAt).toLocaleString('ar')}</p>${entry.details?.changedFields?.length?`<p>الحقول: ${escapeHTML(entry.details.changedFields.join('، '))}</p>`:''}${entry.details?.favorite!==undefined?`<p>في المفضلة: ${entry.details.favorite?'نعم':'لا'}</p>`:''}${entry.details?.comment?`<p><strong>تعليق العميل:</strong> ${escapeHTML(entry.details.comment)}</p>`:''}</article>`).join('');
+      $('#client-workspace-content').innerHTML=`
+        <h3>العروض وقرارات العميل</h3><div class="workspace-grid">${offers||'<p class="empty">لا توجد عروض مرتبطة.</p>'}</div>
+        <h3>الحملات</h3><div class="workspace-grid">${campaigns||'<p class="empty">لا توجد حملات مرتبطة.</p>'}</div>
+        ${visitManager?`<h3>زيارات الحملات التنفيذية القديمة</h3><div class="workspace-grid">${visits||'<p class="empty">لا توجد زيارات ضمن الحملات المرتبطة.</p>'}</div>`:modeNotice}
+        ${visitManager?visitManagerMarkup(accountId,visitManager):''}
+        <h3>سجل قرارات العميل</h3><div class="workspace-history">${history||'<p class="empty">لا توجد قرارات مسجلة بعد.</p>'}</div>
+        <h3>سجل تغييرات الحساب والزيارات</h3><div class="workspace-history">${activity||'<p class="empty">لا توجد تغييرات مسجلة بعد.</p>'}</div>`;
+      $('#client-workspace-message').textContent='';
+      $('#client-workspace-panel').classList.remove('hidden');
+      $('#client-workspace-panel').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    function renderAccounts() {
+      const host=$('#accounts');host.replaceChildren();
+      if(!state.accounts.length){host.innerHTML='<div class="empty">لا توجد حسابات عملاء حتى الآن.</div>';return;}
+      for(const account of state.accounts){
+        const item=document.createElement('article');item.className='account';
+        const name=document.createElement('h3');name.textContent=account.clientName;
+        const badge=document.createElement('span');badge.className=`badge ${account.active?'':'inactive'} ${account.portalStatus==='draft'?'draft':''}`;badge.textContent=`${account.active?'نشط':'غير نشط'} · ${account.portalStatus==='published'?'منشورة':'مسودة'}`;
+        const head=document.createElement('div');head.className='account-head';head.append(name,badge);
+        const company=document.createElement('p');company.textContent=`${account.companyName} · ${account.email||'لا يوجد بريد إلكتروني'} · المستخدم: ${account.username}`;
+        const assigned=document.createElement('p');assigned.textContent=`${account.campaignCount} حملة: ${(account.campaigns||[]).map(c=>c.campaignName).join('، ')||'لا توجد حملات'}`;
+        const modeLabels={prospective:'عميل محتمل',selecting:'عميل بيختار معلنين',existing:'عميل موجود بالفعل'};
+        const offers=document.createElement('p');offers.textContent=`${modeLabels[account.displayMode|| (account.clientType==='prospective'?'prospective':'selecting')]} · ${(account.offers||[]).length} عرض: ${(account.offers||[]).map(offer=>offer.offerName).join('، ')||'لا توجد عروض'}`;
+        const history=document.createElement('p');history.textContent=`${account.decisionHistoryCount||0} تغيير قرار محفوظ`;
+        const activity=document.createElement('p');activity.textContent=`آخر نشاط: ${account.lastActivityAt?new Date(account.lastActivityAt).toLocaleString('ar'):'غير مسجل'}`;
+        item.append(head,company,assigned,offers,history,activity);
+        if(['admin','editor'].includes(state.user.role)){
+          const modeTools=document.createElement('div');modeTools.className='tools';
+          const modeSelect=document.createElement('select');modeSelect.className='field-control';modeSelect.setAttribute('aria-label',`طريقة عرض ${account.clientName}`);
+          for(const [value,label] of Object.entries(modeLabels))modeSelect.add(new Option(label,value));
+          modeSelect.value=account.displayMode|| (account.clientType==='prospective'?'prospective':'selecting');
+          const saveMode=document.createElement('button');saveMode.className='button secondary';saveMode.type='button';saveMode.textContent='حفظ طريقة العرض';
+          saveMode.addEventListener('click',async()=>{
+            saveMode.disabled=true;
+            try{
+              await api(`/api/client-accounts/${encodeURIComponent(account.id)}/display-mode`,{method:'PATCH',body:JSON.stringify({displayMode:modeSelect.value})});
+              const result=await api('/api/client-accounts');state.accounts=result.accounts;renderAccounts();
+              $('#form-message').textContent='تم حفظ طريقة عرض العميل وتحديث إعداد البوابة.';
+              if(state.workspaceAccountId===account.id)await loadClientWorkspace(account.id);
+            }catch(error){$('#form-message').textContent=error.message;saveMode.disabled=false;}
+          });
+          modeTools.append(modeSelect,saveMode);item.append(modeTools);
+        }
+        const tools=document.createElement('div');tools.className='tools';
+        const workspace=document.createElement('button');workspace.className='button secondary';workspace.type='button';workspace.textContent='مساحة العمل';workspace.addEventListener('click',()=>loadClientWorkspace(account.id).catch(error=>$('#form-message').textContent=error.message));
+        tools.append(workspace);
+        if(state.user.role==='admin'){
+          const edit=document.createElement('button');edit.className='button secondary';edit.type='button';edit.textContent='تعديل الحساب';edit.addEventListener('click',()=>editAccount(account));
+          const portal=document.createElement('button');portal.className='button secondary';portal.type='button';portal.textContent='معاينة الصفحة';portal.addEventListener('click',()=>openPreview(account.id));
+          const toggle=document.createElement('button');toggle.className='button secondary';toggle.type='button';toggle.textContent=account.active?'تعطيل الحساب':'إعادة تفعيل الحساب';
+          toggle.addEventListener('click',async()=>{
+            const action=account.active?'تعطيل':'إعادة تفعيل';
+            const warning=account.active
+              ? `سيتم ${action} دخول ${account.clientName}. ستبقى العروض والحملات وسجلات القرارات محفوظة دون حذف. هل تريد المتابعة؟`
+              : `سيتم ${action} دخول ${account.clientName} باستخدام روابطه وتعييناته الحالية. هل تريد المتابعة؟`;
+            if(!window.confirm(warning))return;
+            toggle.disabled=true;
+            try{
+              await api(`/api/client-accounts/${encodeURIComponent(account.id)}`,{method:'PATCH',body:JSON.stringify({active:!account.active})});
+              const result=await api('/api/client-accounts');state.accounts=result.accounts;renderAccounts();
+              $('#form-message').textContent=account.active?'تم تعطيل الحساب مع الحفاظ على جميع الارتباطات وسجلات القرارات.':'تمت إعادة تفعيل الحساب.';
+            }catch(error){$('#form-message').textContent=error.message;toggle.disabled=false;}
+          });
+          tools.append(edit,portal,toggle);
+        }
+        item.append(tools);
+        host.append(item);
+      }
+    }
+    function resetForm() {
+      state.editingId=null;$('#account-form').reset();$('#form-title').textContent='إنشاء حساب عميل';
+      $('#save-account').textContent='إنشاء الحساب';$('#cancel-edit').classList.add('hidden');
+      $('#password-hint').textContent='12 حرفًا على الأقل';$('#account-form').elements.password.required=true;
+      $('#account-form').elements.username.disabled=false;$('#account-form').elements.active.checked=true;
+      $('#account-form').elements.displayMode.value='selecting';renderCampaignPicker();renderCatalogPicker();
+      renderPortalConfig(defaultPortalConfig('request-approval','draft'));
+    }
+    function editAccount(account) {
+      state.editingId=account.id;const form=$('#account-form');
+      form.elements.clientName.value=account.clientName;form.elements.companyName.value=account.companyName;
+      form.elements.email.value=account.email||'';form.elements.internalNotes.value=account.internalNotes||'';
+      form.elements.username.value=account.username;form.elements.username.disabled=false;form.elements.password.value='';
+      form.elements.password.required=false;form.elements.active.checked=account.active;
+      form.elements.displayMode.value=account.displayMode || (account.clientType==='prospective'?'prospective':'selecting');
+      $('#form-title').textContent=`تعديل حساب ${account.clientName}`;$('#save-account').textContent='حفظ التغييرات';
+      $('#cancel-edit').classList.remove('hidden');$('#password-hint').textContent='اتركه فارغًا للإبقاء على كلمة المرور الحالية';
+      renderCampaignPicker((account.campaigns||[]).map(c=>c.id));
+      renderCatalogPicker((account.offers||[]).map(offer=>offer.id));
+      renderPortalConfig(account.portalConfig || defaultPortalConfig('request-approval',account.portalStatus));
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    function defaultPortalConfig(template='request-approval',status='draft') {
+      const sections={
+        'request-approval':['requestApproval'],'visit-schedule':['visitSchedule'],
+        'delivery-campaign':['deliveryCampaign'],'campaign-report':['campaignReport'],
+        'custom-view':['requestApproval','visitSchedule','deliveryCampaign','campaignReport']
+      };
+      return {template,status,sections:[...(sections[template]||sections['request-approval'])],
+        fields:{requestApproval:['name','username','platform','followers','decision'],
+          visitSchedule:['name','username','visitDate','visitTime','visitCity','visitBranch','visitStatus','coverageStatus'],
+          deliveryCampaign:['name','username','recipientName','deliveryCity','deliveryDistrict','orderDetails','shippingStatus','deliveryDate'],
+          campaignReport:['campaignSummary','targetCount','coverageSummary','visitSummary','deliverySummary']},
+        actions:{allowDecisions:true,allowRevert:true,allowVisitConfirmation:false,allowVisitChangeRequest:false,allowShippingFollowUp:false}};
+    }
+    function renderPortalConfig(config) {
+      state.config=structuredClone(config||defaultPortalConfig());
+      $('#account-form').elements.template.value=state.config.template;
+      $('#account-form').elements.portalStatus.value=state.config.status;
+      const sectionHost=$('#portal-sections');sectionHost.replaceChildren();
+      for(const section of state.config.sections){
+        const row=document.createElement('div');row.className='section-row';row.dataset.section=section;
+        const label=document.createElement('label');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=true;checkbox.dataset.sectionToggle=section;
+        const text=document.createElement('span');text.textContent=sectionLabels[section];label.append(checkbox,text);
+        const tools=document.createElement('div');tools.className='section-row-tools';
+        for(const [direction,caption] of [['up','↑'],['down','↓']]){const button=document.createElement('button');button.type='button';button.textContent=caption;button.setAttribute('aria-label',direction==='up'?'تحريك القسم لأعلى':'تحريك القسم لأسفل');button.addEventListener('click',()=>moveSection(row,direction));tools.append(button);}
+        row.append(label,tools);sectionHost.append(row);
+      }
+      for(const section of Object.keys(sectionLabels)){
+        if(state.config.sections.includes(section))continue;
+        const row=document.createElement('div');row.className='section-row';row.dataset.section=section;
+        const label=document.createElement('label');const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.dataset.sectionToggle=section;
+        const text=document.createElement('span');text.textContent=sectionLabels[section];label.append(checkbox,text);
+        row.append(label);sectionHost.append(row);
+      }
+      renderPortalFields();
+      const actions=$('#portal-actions');actions.replaceChildren();
+      for(const [key,label] of Object.entries(actionLabels)){
+        const wrap=document.createElement('label');wrap.className='config-item';const checkbox=document.createElement('input');
+        checkbox.type='checkbox';checkbox.dataset.action=key;checkbox.checked=Boolean(state.config.actions[key]);
+        const text=document.createElement('span');text.textContent=label;wrap.append(checkbox,text);actions.append(wrap);
+      }
+    }
+    function renderPortalFields() {
+      const host=$('#portal-fields');host.replaceChildren();
+      for(const section of Object.keys(fieldLabels)){
+        const heading=document.createElement('p');heading.className='muted';heading.textContent=`حقول: ${sectionLabels[section]}`;
+        const grid=document.createElement('div');grid.className='config-grid';
+        for(const [field,label] of Object.entries(fieldLabels[section])){
+          const item=document.createElement('label');item.className='config-item';const checkbox=document.createElement('input');
+          checkbox.type='checkbox';checkbox.dataset.fieldSection=section;checkbox.value=field;
+          checkbox.checked=(state.config.fields[section]||[]).includes(field);
+          const text=document.createElement('span');text.textContent=label;item.append(checkbox,text);grid.append(item);
+        }
+        host.append(heading,grid);
+      }
+    }
+    function moveSection(row,direction) {
+      const host=row.parentElement;const sibling=direction==='up'?row.previousElementSibling:row.nextElementSibling;
+      if(!sibling)return;
+      if(direction==='up')host.insertBefore(row,sibling);else host.insertBefore(sibling,row);
+    }
+    function collectPortalConfig(statusOverride) {
+      const sections=[...$('#portal-sections').querySelectorAll('.section-row')].filter(row=>row.querySelector('input[data-section-toggle]').checked).map(row=>row.dataset.section);
+      const fields={};for(const section of Object.keys(fieldLabels))fields[section]=[...$('#portal-fields').querySelectorAll(`input[data-field-section="${section}"]:checked`)].map(input=>input.value);
+      const actions={};for(const input of $('#portal-actions').querySelectorAll('input[data-action]'))actions[input.dataset.action]=input.checked;
+      if(!actions.allowDecisions)actions.allowRevert=false;
+      return {template:$('#account-form').elements.template.value,status:statusOverride||$('#account-form').elements.portalStatus.value,sections,fields,actions};
+    }
+    function openPreview(accountId) {
+      $('#preview-frame').src=`/portal?preview=${encodeURIComponent(accountId)}`;
+      $('#preview-dialog').showModal();
+    }
+    async function load() {
+      const session=await api('/api/session');state.user=session.user;
+      if(!state.user){$('#denied').classList.remove('hidden');return;}
+      if(!['admin','editor'].includes(state.user.role)){ $('#denied').classList.remove('hidden');return; }
+      $('#workspace').classList.remove('hidden');
+      if(state.user.role!=='admin')$('#editor-panel').classList.add('hidden');
+      const [accounts,campaigns,catalogs]=await Promise.all([api('/api/client-accounts'),api('/api/campaigns'),api('/api/client-catalogs')]);
+      state.accounts=accounts.accounts;state.campaigns=campaigns.campaigns;state.catalogs=catalogs.catalogs;renderAccounts();renderCampaignPicker();renderCatalogPicker();
+      if(state.user.role==='admin'){const templates=await api('/api/client-portal-templates');state.templates=templates.templates;renderSavedTemplates();}
+      resetForm();
+    }
+    function renderSavedTemplates() {
+      const select=$('#saved-template');select.replaceChildren(new Option('اختر قالبًا محفوظًا',''));
+      for(const template of state.templates)select.add(new Option(template.name,template.id));
+    }
+    async function persistAccount({preview=false,resetAfter=false}={}) {
+      const accountForm=$('#account-form');
+      if(!accountForm.reportValidity())return false;
+      const form=new FormData(accountForm);
+      const body={clientName:form.get('clientName'),companyName:form.get('companyName'),email:form.get('email'),internalNotes:form.get('internalNotes'),username:form.get('username'),
+        password:form.get('password'),active:form.get('active')==='on',displayMode:form.get('displayMode'),
+        campaignIds:[...$('#campaign-picker').querySelectorAll('input:checked')].map(input=>input.value),
+        catalogIds:[...$('#catalog-picker').querySelectorAll('input:checked')].map(input=>input.value),
+        portalConfig:collectPortalConfig(preview?'draft':undefined)};
+      $('#form-message').textContent='';
+      try {
+        if(state.editingId){if(!body.password)delete body.password;await api(`/api/client-accounts/${encodeURIComponent(state.editingId)}`,{method:'PATCH',body:JSON.stringify(body)});}
+        else await api('/api/client-accounts',{method:'POST',body:JSON.stringify(body)});
+        const savedId=state.editingId;
+        $('#form-message').textContent='تم حفظ حساب العميل.';
+        const result=await api('/api/client-accounts');state.accounts=result.accounts;renderAccounts();
+        if(resetAfter||!savedId)resetForm();
+        else editAccount(state.accounts.find(account=>account.id===savedId));
+        return true;
+      } catch(error){$('#form-message').textContent=error.message;return false;}
+    }
+    $('#account-form').addEventListener('submit',async(event)=>{event.preventDefault();await persistAccount({resetAfter:true});});
+    $('#client-workspace-content').addEventListener('submit',async(event)=>{
+      const scheduleForm=event.target.closest('form[data-manual-visit],form[data-scheduled-visit]');
+      if(scheduleForm){
+        event.preventDefault();
+        if(!scheduleForm.reportValidity())return;
+        const formData=new FormData(scheduleForm);
+        const body=Object.fromEntries(['influencerId','visitDate','visitTime','city','branch'].map(key=>[key,formData.get(key)]));
+        if(!body.influencerId){$('#client-workspace-message').textContent='اختر مؤثرًا موجودًا من اقتراحات البحث قبل الحفظ.';return;}
+        const visitId=scheduleForm.dataset.visitId;
+        const button=scheduleForm.querySelector('button[type="submit"]');button.disabled=true;
+        try{
+          await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/visits${visitId?`/${encodeURIComponent(visitId)}`:''}`,{
+            method:visitId?'PATCH':'POST',body:JSON.stringify(body)
+          });
+          await loadClientWorkspace(state.workspaceAccountId);
+          $('#client-workspace-message').textContent=visitId?'تم تحديث الزيارة كمسودة؛ أعد النشر لإظهار التغيير للعميل.':'تمت إضافة الزيارة كمسودة.';
+        }catch(error){$('#client-workspace-message').textContent=error.message;button.disabled=false;}
+        return;
+      }
+      const form=event.target.closest('form[data-client-visit]');if(!form)return;
+      event.preventDefault();
+      const button=form.querySelector('button[type="submit"]');button.disabled=true;
+      const values=new FormData(form);
+      try{
+        await api(`/api/campaigns/${encodeURIComponent(form.dataset.campaignId)}/targets/${encodeURIComponent(form.dataset.influencerId)}`,{
+          method:'PATCH',body:JSON.stringify({
+            visitDate:values.get('visitDate'),visitTime:values.get('visitTime'),
+            visitCity:values.get('visitCity'),visitBranch:values.get('visitBranch'),
+            visitAddress:values.get('visitAddress'),visitStatus:values.get('visitStatus'),
+            visitNotes:values.get('visitNotes')
+          })
+        });
+        $('#client-workspace-message').textContent='تم حفظ موعد الزيارة وتفاصيله.';
+        const accountId=state.workspaceAccountId;
+        const accounts=await api('/api/client-accounts');state.accounts=accounts.accounts;renderAccounts();
+        await loadClientWorkspace(accountId);
+      }catch(error){$('#client-workspace-message').textContent=error.message;button.disabled=false;}
+    });
+    $('#client-workspace-content').addEventListener('change',async(event)=>{
+      const search=event.target.closest('[data-visit-influencer-search]');
+      if(search){
+        const hidden=search.parentElement.querySelector('[data-visit-influencer-id]');
+        const selected=[...state.visitInfluencers.values()].find(item=>item.label===search.value);
+        if(hidden)hidden.value=selected?.id||'';
+        return;
+      }
+      const input=event.target.closest('[data-visit-file]');if(!input)return;
+      const file=input.files?.[0];if(!file)return;
+      const host=$('#visit-import-preview');host.textContent='جارٍ رفع الملف والتحقق من صفوف المعاينة…';
+      try{
+        if(!file.name.toLocaleLowerCase().endsWith('.xlsx')||file.size>3_300_000)throw new Error('اختر ملف .xlsx لا يتجاوز 3.3 ميغابايت.');
+        const bytes=new Uint8Array(await file.arrayBuffer());let binary='';
+        for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+        const fileBase64=btoa(binary);
+        const preview=await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/visits/import-preview`,{
+          method:'POST',body:JSON.stringify({fileName:file.name,fileBase64})
+        });
+        state.visitPreview=preview;
+        await loadClientWorkspace(state.workspaceAccountId);
+      }catch(error){host.textContent=error.message;input.value='';}
+    });
+    $('#client-workspace-content').addEventListener('input',event=>{
+      const search=event.target.closest('[data-visit-influencer-search]');if(!search)return;
+      const hidden=search.parentElement.querySelector('[data-visit-influencer-id]');
+      const selected=[...state.visitInfluencers.values()].find(item=>item.label===search.value);
+      if(hidden)hidden.value=selected?.id||'';
+      const query=search.value.trim();
+      const accountId=state.workspaceAccountId;
+      clearTimeout(state.visitSearchTimer);
+      if(selected||query.length<2)return;
+      state.visitSearchTimer=setTimeout(async()=>{
+        try{
+          const result=await api(`/api/client-accounts/${encodeURIComponent(accountId)}/visits/influencer-search?q=${encodeURIComponent(query)}`);
+          if(state.workspaceAccountId!==accountId)return;
+          const datalist=$('#visit-influencer-options');if(!datalist)return;
+          for(const item of result.influencers||[])state.visitInfluencers.set(item.id,{...item,label:visitOptionLabel(item)});
+          datalist.replaceChildren(...(result.influencers||[]).map(item=>{
+            const option=document.createElement('option');option.value=visitOptionLabel(item);return option;
+          }));
+        }catch(error){$('#client-workspace-message').textContent=error.message;}
+      },250);
+    });
+    $('#client-workspace-content').addEventListener('click',async(event)=>{
+      const changeMode=event.target.closest('[data-mode-to-existing]');
+      if(changeMode){
+        if(!window.confirm('سيُغيّر هذا الاختيار طريقة عرض العميل إلى «عميل موجود بالفعل». ستبقى قراراته وسجلاته محفوظة، ولن يظهر جدول الزيارات إلا بعد نشره. متابعة؟'))return;
+        changeMode.disabled=true;
+        try{
+          await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/display-mode`,{
+            method:'PATCH',body:JSON.stringify({displayMode:'existing'})
+          });
+          const result=await api('/api/client-accounts');state.accounts=result.accounts;renderAccounts();
+          await loadClientWorkspace(state.workspaceAccountId);
+          $('#client-workspace-message').textContent='تم تغيير طريقة عرض العميل بعد تأكيد الخادم. أضف جدول الزيارات ثم انشره عند الجاهزية.';
+        }catch(error){$('#client-workspace-message').textContent=error.message;changeMode.disabled=false;}
+        return;
+      }
+      const cancel=event.target.closest('[data-import-cancel]');
+      if(cancel){state.visitPreview=null;await loadClientWorkspace(state.workspaceAccountId);return;}
+      const confirmImport=event.target.closest('[data-import-confirm]');
+      if(confirmImport){
+        const preview=state.visitPreview;if(!preview)return;
+        const rows=[...$('#visit-import-preview').querySelectorAll('[data-preview-row]')]
+          .filter(row=>row.querySelector('[data-preview-include]').checked)
+          .map(row=>({
+            rowNumber:Number(row.dataset.previewRow),
+            influencerId:row.querySelector('[data-preview-influencer-id]').value,
+            visitDate:row.querySelector('[data-preview-date]').value,
+            visitTime:row.querySelector('[data-preview-time]').value,
+            city:row.querySelector('[data-preview-city]').value,
+            branch:row.querySelector('[data-preview-branch]').value
+          }));
+        if(!rows.length){$('#client-workspace-message').textContent='اختر صفًا واحدًا صالحًا على الأقل وأكمل مطابقته.';return;}
+        if(new Set(rows.map(row=>row.influencerId)).size!==rows.length){$('#client-workspace-message').textContent='المؤثر نفسه محدد في أكثر من صف. صحح التكرار قبل التأكيد.';return;}
+        const previous=new Map((preview.existingVisits||[]).map(visit=>[visit.influencerId,visit]));
+        const ids=new Set(rows.map(row=>row.influencerId));
+        const changes={
+          added:rows.filter(row=>!previous.has(row.influencerId)).length,
+          updated:rows.filter(row=>{const old=previous.get(row.influencerId);return old&&(old.visitDate!==row.visitDate||old.visitTime!==row.visitTime||old.city!==row.city||old.branch!==row.branch);}).length,
+          unchanged:rows.filter(row=>{const old=previous.get(row.influencerId);return old&&old.visitDate===row.visitDate&&old.visitTime===row.visitTime&&old.city===row.city&&old.branch===row.branch;}).length,
+          removed:(preview.existingVisits||[]).filter(visit=>!ids.has(visit.influencerId)).length,
+          rejectedRows:preview.rows.length-rows.length
+        };
+        if(!window.confirm(`سيُستبدل الجدول الحالي صراحةً: إضافة ${changes.added}، تحديث ${changes.updated}، دون تغيير ${changes.unchanged}، إزالة ${changes.removed}، استبعاد ${changes.rejectedRows} صف. سيُحفظ الناتج كمسودة ولن يظهر للعميل قبل النشر. متابعة؟`))return;
+        confirmImport.disabled=true;
+        try{
+          const result=await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/visits/import-confirm`,{
+            method:'POST',body:JSON.stringify({previewToken:preview.previewToken,replaceExisting:true,rows})
+          });
+          state.visitPreview=null;
+          await loadClientWorkspace(state.workspaceAccountId);
+          const x=result.changes;
+          $('#client-workspace-message').textContent=`تم حفظ المسودة. أضيف ${x.added}، حُدّث ${x.updated}، لم يتغير ${x.unchanged}، أزيل ${x.removed}، استُبعد ${x.rejectedRows} صف (مكرر ${result.issues.duplicateRows}، أخطاء ${result.issues.invalidRows}، ملتبس ${result.issues.ambiguousRows}، غير مطابق ${result.issues.unmatchedRows}).`;
+        }catch(error){$('#client-workspace-message').textContent=error.message;confirmImport.disabled=false;}
+        return;
+      }
+      const remove=event.target.closest('[data-visit-delete]');
+      if(remove){
+        if(!window.confirm('إزالة موعد الزيارة من جدول هذا العميل؟ لن يُحذف سجل المؤثر.'))return;
+        remove.disabled=true;
+        try{
+          await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/visits/${encodeURIComponent(remove.dataset.visitDelete)}`,{method:'DELETE'});
+          await loadClientWorkspace(state.workspaceAccountId);
+          $('#client-workspace-message').textContent='أزيلت الزيارة وحُفظ الجدول كمسودة.';
+        }catch(error){$('#client-workspace-message').textContent=error.message;remove.disabled=false;}
+        return;
+      }
+      const publish=event.target.closest('[data-visit-publish],[data-visit-unpublish]');
+      if(publish){
+        const unpublish=publish.hasAttribute('data-visit-unpublish');
+        if(unpublish&&!window.confirm('سيُخفى جدول الزيارات عن العميل مع الاحتفاظ بالبيانات. متابعة؟'))return;
+        publish.disabled=true;
+        try{
+          await api(`/api/client-accounts/${encodeURIComponent(state.workspaceAccountId)}/visits/${unpublish?'unpublish':'publish'}`,{method:'POST',body:JSON.stringify({})});
+          state.visitPreview=null;await loadClientWorkspace(state.workspaceAccountId);
+          $('#client-workspace-message').textContent=unpublish?'أُلغي نشر الجدول وبقي محفوظًا كمسودة.':'نُشر جدول الزيارات للعميل.';
+        }catch(error){$('#client-workspace-message').textContent=error.message;publish.disabled=false;}
+      }
+    });
+    $('#close-client-workspace').addEventListener('click',()=>$('#client-workspace-panel').classList.add('hidden'));
+    $('#cancel-edit').addEventListener('click',resetForm);
+    $('#portal-sections').addEventListener('change',event=>{
+      if(!event.target.matches('[data-section-toggle]'))return;
+      const row=event.target.closest('.section-row');
+      if(event.target.checked){const firstUnchecked=[...$('#portal-sections').querySelectorAll('.section-row')].find(item=>!item.querySelector('[data-section-toggle]').checked);if(firstUnchecked)$('#portal-sections').insertBefore(row,firstUnchecked);}
+    });
+    $('#account-form').elements.template.addEventListener('change',event=>{
+      const current=collectPortalConfig();const defaults=defaultPortalConfig(event.target.value,current.status);
+      renderPortalConfig({...current,template:event.target.value,sections:defaults.sections});
+    });
+    $('#saved-template').addEventListener('change',event=>{
+      const template=state.templates.find(item=>item.id===event.target.value);
+      if(template)renderPortalConfig({...template.config,status:$('#account-form').elements.portalStatus.value});
+    });
+    $('#save-template').addEventListener('click',async()=>{
+      const name=window.prompt('اسم القالب القابل لإعادة الاستخدام:');if(!name)return;
+      try{const result=await api('/api/client-portal-templates',{method:'POST',body:JSON.stringify({name,config:collectPortalConfig('draft')})});state.templates.push(result.template);renderSavedTemplates();$('#form-message').textContent='تم حفظ القالب.';}
+      catch(error){$('#form-message').textContent=error.message;}
+    });
+    $('#preview-account').addEventListener('click',async()=>{
+      if(!state.editingId){$('#form-message').textContent='احفظ حساب العميل أولًا لتتمكن من معاينة صفحته.';return;}
+      if(await persistAccount({preview:true}))openPreview(state.editingId);
+    });
+    $('#close-preview').addEventListener('click',()=>$('#preview-dialog').close());
+    load().catch(error=>{ $('#denied').classList.remove('hidden');$('#denied').querySelector('.muted').textContent=error.message; });
+  </script>
+  <script src="/assets/password-visibility.js?v=2.0.0"></script>
+</body>
+</html>

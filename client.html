@@ -1,0 +1,1435 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#627269">
+  <meta name="description" content="عرض خاص لمجموعة مختارة من المؤثرين">
+  <link id="brand-favicon" rel="icon" type="image/png">
+  <title>عرض المؤثرين</title>
+  <link rel="stylesheet" href="/assets/client.css?v=2.0.1">
+  <link rel="stylesheet" href="/assets/fikratak-design.css?v=2.0.1">
+</head>
+<body class="presentation-enter">
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="brand-row">
+        <a class="brand" href="/" aria-label="الصفحة الرئيسية" title="الصفحة الرئيسية">
+          <img id="brand-logo" alt="" hidden>
+          <div class="brand-copy"><strong id="brand-name">عرض المؤثرين</strong><span id="brand-tagline">عرض خاص</span></div>
+        </a>
+        <div class="header-tools">
+          <a id="preview-return" class="header-toggle preview-return" href="/?restore-client-preparation=1" hidden>العودة للوكالة</a>
+          <button id="client-language-toggle" type="button" class="header-toggle">English</button>
+          <button id="client-theme-toggle" type="button" class="header-toggle" aria-label="الوضع الداكن" title="الوضع الداكن"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/icons/sprite.svg#moon"></use></svg></button>
+        </div>
+      </div>
+      <div class="hero-copy">
+        <p class="eyebrow" id="company-identity" hidden></p>
+        <h1 id="company-title">العرض</h1>
+        <p class="intro">مجموعة مختارة من المؤثرين وحساباتهم، أُعدّت لتناسب أهداف حملتكم.</p>
+      </div>
+      <div class="client-hero-stats" aria-label="ملخص الحملة">
+        <div><strong id="hero-influencer-count">0</strong><span>عدد المؤثرين</span></div>
+        <div><strong id="hero-follower-count">0</strong><span>إجمالي المتابعين</span></div>
+        <div><strong id="hero-city-count">0</strong><span>عدد المدن</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="decision-summary" id="decision-summary" aria-label="ملخص القرارات">
+      <div class="decision-summary-counts">
+        <span class="summary-count accepted"><strong id="accepted-count">0</strong> مقبول</span>
+        <span class="summary-count rejected"><strong id="rejected-count">0</strong> مرفوض</span>
+        <span class="summary-count pending"><strong id="pending-count">0</strong> قيد المراجعة</span>
+      </div>
+      <div class="decision-progress" role="progressbar" aria-label="نسبة القرارات المؤكدة" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="decision-progress-bar"></span><strong id="decision-progress-label">٠٪</strong></div>
+      <button class="button button-accept" id="send-decisions" type="button" disabled>تأكيد الاختيارات</button>
+    </section>
+    <section class="content-panel" aria-labelledby="list-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="list-title">المؤثرون المرشحون</h2>
+          <p id="list-subtitle">تعرّفوا على الحسابات المرشحة وراجعوا تفاصيلها قبل اعتماد اختياراتكم.</p>
+        </div>
+        <div class="section-tools">
+          <div class="client-view-switch" role="group" aria-label="طريقة عرض المؤثرين">
+            <button type="button" id="cards-grid-view" aria-pressed="true" aria-label="عرض شبكي"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#grid"></use></svg></button>
+            <button type="button" id="cards-list-view" aria-pressed="false" aria-label="عرض قائمة"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#list"></use></svg></button>
+          </div>
+        </div>
+      </div>
+      <p class="notice" id="catalog-status" aria-live="polite"></p>
+      <div class="cards" id="cards" aria-live="polite" aria-busy="true"></div>
+      <section id="company-work-gallery" class="company-work-gallery" aria-labelledby="company-work-title" data-reveal hidden>
+        <div class="company-work-heading">
+          <h2 id="company-work-title">من مكتبة فكرتك الرقمية مع صُنّاع المحتوى والمؤثرين</h2>
+          <p class="company-work-copy-primary">نمنح علامتك التجارية صوتًا يصل إلى جمهورها، ونحوّل رسالتها إلى محتوى إبداعي يتحدث عنها بأسلوب مؤثر</p>
+          <p class="company-work-copy-secondary">ومن المملكة إلى الخليج العربي، نصنع لعلامتك حضورًا يُسمع ويُرى، ونوسّع انتشارها من خلال صُنّاع المحتوى والمؤثرين</p>
+        </div>
+        <div class="company-work-controls" aria-label="التنقل بين الفيديوهات">
+          <button type="button" data-video-scroll="previous" aria-label="الفيديوهات السابقة">‹</button>
+          <button type="button" data-video-scroll="next" aria-label="الفيديوهات التالية">›</button>
+        </div>
+        <div class="company-work-grid" id="company-work-videos"></div>
+      </section>
+      <section id="coverage-gallery" class="coverage-gallery" aria-labelledby="coverage-title" data-reveal hidden>
+        <div class="coverage-heading">
+          <div class="coverage-heading-copy">
+            <span class="coverage-eyebrow" id="coverage-eyebrow">Portfolio · Coverage</span>
+            <h2 id="coverage-title">أعمال المؤثرين</h2>
+            <p id="coverage-subtitle">نماذج فيديو مرتبطة بالمؤثرين المرشحين لهذا العرض.</p>
+          </div>
+          <div class="coverage-count"><strong id="coverage-count">0</strong><span id="coverage-count-label">فيديو</span></div>
+        </div>
+        <div class="coverage-grid" id="coverage-videos"></div>
+      </section>
+      <div class="empty" id="loading">جارٍ تجهيز العرض...</div>
+    </section>
+  </main>
+  <dialog id="creator-details-dialog" class="creator-details-dialog" aria-label="تفاصيل المؤثر">
+    <button class="creator-details-close" type="button" aria-label="إغلاق" id="creator-details-close"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    <div id="creator-details-content"></div>
+  </dialog>
+  <div id="decision-toast" class="decision-toast" role="status" aria-live="polite"></div>
+
+  <dialog id="work-video-dialog" class="work-video-dialog" aria-labelledby="work-video-dialog-title">
+    <div class="work-video-dialog-header">
+      <h2 id="work-video-dialog-title">مشاهدة من أعمال فكرتك الرقمية</h2>
+      <button class="work-video-close" id="work-video-close" type="button" aria-label="إغلاق مشغل الفيديو"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    </div>
+    <div class="work-player-shell"><div id="work-video-player"></div></div>
+    <p class="work-video-message" id="work-video-fallback" role="status" aria-live="polite" hidden></p>
+    <a class="work-video-youtube-link" id="work-video-youtube-link" href="#" target="_blank" rel="noopener noreferrer" hidden>مشاهدة على YouTube</a>
+  </dialog>
+
+  <footer>
+    <div id="page-footer">تم إعداد هذا العرض خصيصًا لكم بواسطة فكرتك.</div>
+    <div class="legal-note" id="legal-note">
+      جميع البيانات الواردة في هذا العرض، بما في ذلك أسماء المؤثرين، وحساباتهم، وأسعار التعاقد معهم، تُعد معلومات سرية مملوكة لقسم المؤثرين بشركة فكرتك الرقمية. ويُحظر نسخها أو مشاركتها أو إطلاع أي طرف ثالث عليها بأي وسيلة دون موافقة خطية مسبقة. ويُعد أي إفشاء أو استخدام غير مصرح به لهذه المعلومات مخالفة يترتب عليها المسؤولية القانونية.
+    </div>
+  </footer>
+  <dialog id="decision-dialog" class="decision-dialog" aria-labelledby="decision-dialog-title">
+    <div class="dialog-content">
+      <h2 id="decision-dialog-title">تأكيد القرار</h2>
+      <p id="decision-dialog-copy"></p>
+      <p id="decision-dialog-message" class="status" role="alert" aria-live="assertive"></p>
+      <div class="dialog-actions">
+        <button class="button button-secondary" id="decision-cancel" type="button">إلغاء</button>
+        <button class="button button-reject" id="decision-confirm" type="button">تأكيد</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/assets/i18n.js?v=2.0.0"></script>
+  <script src="/assets/ui.js?v=2.0.1"></script>
+  <script src="/assets/follower-tiers.js?v=2.0.1"></script>
+  <script src="/assets/icons.js?v=2.0.0"></script>
+  <script>
+    const previewCatalogId = new URLSearchParams(location.search).get('catalog') || '';
+    const previewMode = location.pathname === '/client-preview' && /^[a-f0-9]{32}$/.test(previewCatalogId);
+    const token = previewMode ? '' : location.pathname.split('/').filter(Boolean).at(-1);
+    const cards = document.querySelector('#cards');
+    const loading = document.querySelector('#loading');
+    const statusEl = document.querySelector('#catalog-status');
+    let influencers = [];
+    let catalogClientName = '';
+    const decisionRequests = new Map();
+    let pendingDecision = null;
+    let catalogSettings = { showCity: true, showCategory: true, showDetails: false, decisionsEnabled: true, showCompanyWork: false, companyWorkVideos: [], coverageVideos: [] };
+    let presentationBrand = null;
+    let selectedWorkVideoId = '';
+    let selectedWorkPlayer = null;
+    let youtubeIframeApiPromise = null;
+    let selectedWorkVideoTrigger = null;
+    const revealObserver = 'IntersectionObserver' in window
+      ? new IntersectionObserver((entries, observer) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -32px 0px' })
+      : null;
+    function revealPresentationElements(root = document) {
+      const elements = [
+        ...(root.matches?.('[data-reveal]:not(.is-visible)') ? [root] : []),
+        ...root.querySelectorAll('[data-reveal]:not(.is-visible)')
+      ];
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !revealObserver) {
+        elements.forEach((element) => element.classList.add('is-visible'));
+        return;
+      }
+      elements.forEach((element) => revealObserver.observe(element));
+    }
+    const clientTexts = {
+      ar: {
+        accepted: 'موافق',
+        rejected: 'مرفوض',
+        pending: 'قيد المراجعة',
+        pendingDecisionStatus: 'بانتظار القرار',
+        acceptedCount: 'تمت الموافقة',
+        rejectedCount: 'تم الرفض',
+        approveOffer: 'قبول',
+        rejectOffer: 'رفض',
+        revertDecision: 'تغيير القرار',
+        sendDecisions: 'تأكيد الاختيارات',
+        savingDecision: 'جارٍ حفظ القرار...',
+        confirmRejectTitle: 'تأكيد رفض العرض',
+        confirmRevertTitle: 'التراجع عن القرار',
+        confirmReject: 'هل تريد تسجيل رفض العرض لهذا المعلن؟ يمكنك تغيير القرار قبل تأكيد الاختيارات.',
+        confirmRevert: 'سيُعاد هذا المعلن إلى حالة قيد المراجعة عند تأكيد الاختيارات.',
+        confirmRejectAction: 'تأكيد الرفض',
+        confirmRevertAction: 'تأكيد التراجع',
+        cancel: 'إلغاء',
+        successAccepted: 'تمت الموافقة على العرض بنجاح.',
+        successRejected: 'تم رفض العرض بنجاح.',
+        successReverted: 'تم التراجع عن القرار بنجاح.',
+        successDecisionsSent: 'تم إرسال اختياراتك بنجاح.',
+        noDecisionChanges: 'اختر قراراتك أولًا، ثم اضغط «تأكيد الاختيارات».',
+        pendingDecisionChanges: 'لديك اختيارات لم تُرسل بعد.',
+        selected: 'ترشيح',
+        approved: 'موافق',
+        rejectedLabel: 'مرفوض',
+        followers: 'متابع',
+        noData: 'غير متاح',
+        noDetails: 'لا توجد تفاصيل إضافية متاحة الآن.',
+        details: 'عرض التفاصيل كاملة',
+        suggestions: 'اقتراحات',
+        selected: 'مختار',
+        total: 'إجمالي',
+        loadError: 'رابط العرض غير صالح.',
+        noCatalog: 'لا يوجد مؤثرون متاحون في هذا العرض حاليًا.',
+        saveSuccess: 'تم تسجيل اختيارك',
+        saveError: 'تعذر حفظ الاختيار.',
+        brandName: 'فكرتك الرقمية',
+        brandTagline: 'حلول التسويق بالمؤثرين',
+        preparedFor: 'عرض مُعدّ خصيصًا لـ',
+        intro: 'مجموعة مختارة من المؤثرين وحساباتهم، أُعدّت لتناسب أهداف حملتكم.',
+        listTitle: 'المؤثرون المرشحون',
+        listSubtitle: 'تعرّفوا على الحسابات المرشحة وراجعوا تفاصيلها قبل اعتماد اختياراتكم.',
+        coverageEyebrow: 'الأعمال والتغطية',
+        coverageTitle: 'أعمال المؤثرين',
+        coverageSubtitle: 'نماذج فيديو مرتبطة بالمؤثرين المرشحين لهذا العرض.',
+        coverageCount: 'فيديو',
+        footer: 'تم إعداد هذا العرض خصيصًا لكم بواسطة فكرتك.',
+        legalNote: 'جميع البيانات الواردة في هذا العرض، بما في ذلك أسماء المؤثرين، وحساباتهم، وأسعار التعاقد معهم، تُعد معلومات سرية مملوكة لقسم المؤثرين بشركة فكرتك الرقمية. ويُحظر نسخها أو مشاركتها أو إطلاع أي طرف ثالث عليها بأي وسيلة دون موافقة خطية مسبقة. ويُعد أي إفشاء أو استخدام غير مصرح به لهذه المعلومات مخالفة يترتب عليها المسؤولية القانونية.',
+        waiting: 'جارٍ تجهيز العرض...',
+        workTitle: 'من مكتبة فكرتك الرقمية مع صُنّاع المحتوى والمؤثرين',
+        workSubtitle: 'نصنع محتوى UGC وإعلانات المؤثرين وصُنّاع المحتوى لعلامات تجارية في السعودية والخليج.',
+        previousVideos: 'الفيديوهات السابقة',
+        nextVideos: 'الفيديوهات التالية',
+        videoNetworkError: 'تعذر تحميل واجهة مشغل YouTube. قد تمنع الشبكة أو سياسة أمان المتصفح هذا الطلب؛ أعد المحاولة بعد التحقق من الاتصال.',
+        videoApiTimeout: 'استغرق تحميل واجهة مشغل YouTube وقتًا أطول من المتوقع. تحقق من الاتصال وسياسة الشبكة ثم أعد المحاولة.',
+        videoNoEmbed: 'لا يسمح صاحب هذا الفيديو بتشغيله داخل مواقع أخرى، لذلك لا يمكن تشغيله ضمن هذا العرض.',
+        videoUnavailable: 'الفيديو خاص أو محذوف أو غير متاح من YouTube.',
+        videoInvalid: 'رفض YouTube معرّف الفيديو. تحقق من الرابط المحفوظ في مكتبة الأعمال.',
+        videoPlaybackError: 'تعذر تشغيل الفيديو داخل المشغل. قد تكون هناك مشكلة في تنسيق الفيديو أو المتصفح أو الاتصال.',
+        videoReferrerError: 'رفض YouTube تشغيل الفيديو لأنه لم يتمكن من التحقق من مصدر صفحة العرض.',
+        videoUnknownError: 'أبلغ YouTube عن خطأ غير معروف في تشغيل الفيديو.',
+        videoPlayerError: 'تعذر تهيئة مشغل YouTube داخل صفحة العرض.',
+        playVideo: 'تشغيل الفيديو',
+        closeVideo: 'إغلاق مشغل الفيديو',
+        watchOnYoutube: 'مشاهدة على YouTube',
+        videoEmbedTitle: 'مشغل فيديو أعمال فكرتك',
+        'رابط العرض غير متاح.': 'رابط العرض غير متاح.',
+        'اختيار الموافقة أو الرفض غير صالح.': 'اختيار الموافقة أو الرفض غير صالح.',
+        'المؤثر المحدد غير موجود في العرض.': 'المؤثر المحدد غير موجود في العرض.'
+      },
+      en: {
+        accepted: 'Approved',
+        rejected: 'Rejected',
+        pending: 'Pending review',
+        pendingDecisionStatus: 'Awaiting decision',
+        acceptedCount: 'Approved',
+        rejectedCount: 'Rejected',
+        approveOffer: 'Accept',
+        rejectOffer: 'Reject',
+        revertDecision: 'Change decision',
+        sendDecisions: 'Confirm selections',
+        savingDecision: 'Saving decision...',
+        confirmRejectTitle: 'Confirm rejection',
+        confirmRevertTitle: 'Undo decision',
+        confirmReject: 'Reject this creator? You can change the decision before confirming your selections.',
+        confirmRevert: 'This creator will return to pending review after you confirm your selections.',
+        confirmRejectAction: 'Confirm rejection',
+        confirmRevertAction: 'Confirm undo',
+        cancel: 'Cancel',
+        successAccepted: 'Offer approved.',
+        successRejected: 'Offer rejected.',
+        successReverted: 'Decision reverted.',
+        successDecisionsSent: 'Your selections were sent successfully.',
+        noDecisionChanges: 'Choose your decisions, then select “Confirm selections”.',
+        pendingDecisionChanges: 'You have selections that have not been sent yet.',
+        selected: 'suggestions',
+        approved: 'Approved',
+        rejectedLabel: 'Rejected',
+        followers: 'followers',
+        noData: 'Not available',
+        noDetails: 'No additional details are available right now.',
+        details: 'View full details',
+        suggestions: 'Suggestions',
+        selected: 'selected',
+        total: 'Total',
+        loadError: 'This presentation link is invalid.',
+        noCatalog: 'No creators are available in this presentation yet.',
+        saveSuccess: 'Your selection was saved',
+        saveError: 'Could not save the selection.',
+        brandName: 'Fikratak Digital',
+        brandTagline: 'Influencer marketing solutions',
+        preparedFor: 'Prepared especially for',
+        intro: 'A curated selection of creators and social accounts, prepared around your campaign goals.',
+        listTitle: 'Recommended creators',
+        listSubtitle: 'Explore the selected profiles and review their details before confirming your choices.',
+        coverageEyebrow: 'Portfolio · Coverage',
+        coverageTitle: 'Creator work',
+        coverageSubtitle: 'Video examples linked to creators featured in this presentation.',
+        coverageCount: 'videos',
+        footer: 'This presentation was prepared especially for you by Fikratak.',
+        legalNote: 'All information contained in this presentation, including influencer names, accounts, and contract pricing, is confidential and owned by the Influencer Division of Fikratak Digital Company. Copying, sharing, or exposing it to any third party in any way is strictly prohibited without prior written consent. Any unauthorized disclosure or use of this information constitutes a violation subject to legal liability.',
+        waiting: 'Preparing the presentation...',
+        workTitle: 'From Fikratak Digital’s library of content creators and influencers',
+        workSubtitle: 'We create UGC and influencer and creator ads for brands in Saudi Arabia and the Gulf.',
+        previousVideos: 'Previous videos',
+        nextVideos: 'Next videos',
+        videoNetworkError: 'The YouTube player API could not be loaded. Your network or browser security policy may be blocking the request; check the connection and retry.',
+        videoApiTimeout: 'Loading the YouTube player API timed out. Check the connection and network policy, then retry.',
+        videoNoEmbed: 'The owner of this video does not allow playback on other websites, so it cannot play inside this presentation.',
+        videoUnavailable: 'This video is private, deleted, or unavailable on YouTube.',
+        videoInvalid: 'YouTube rejected the video ID. Check the saved link in the work library.',
+        videoPlaybackError: 'The video could not play in the embedded player. The format, browser, or connection may be responsible.',
+        videoReferrerError: 'YouTube refused playback because it could not verify the presentation page source.',
+        videoUnknownError: 'YouTube reported an unknown video playback error.',
+        videoPlayerError: 'The YouTube player could not be initialized inside the presentation.',
+        playVideo: 'Play video',
+        closeVideo: 'Close video player',
+        watchOnYoutube: 'Watch on YouTube',
+        videoEmbedTitle: 'Fikratak work video player',
+        'رابط العرض غير متاح.': 'This presentation link is unavailable.',
+        'اختيار الموافقة أو الرفض غير صالح.': 'The approval or rejection choice is invalid.',
+        'المؤثر المحدد غير موجود في العرض.': 'The selected influencer is not in this presentation.',
+        'تجاوزت عدد طلبات الاستعادة المسموح. حاول مرة أخرى لاحقًا.': 'Too many password-reset requests. Try again later.',
+        'تجاوزت عدد محاولات رمز الاستعادة المسموح. حاول مرة أخرى لاحقًا.': 'Too many reset-code attempts. Try again later.'
+      }
+    };
+    const clientLanguageKey = 'fikratak.client.language';
+    const clientThemeKey = 'fikratak.client.theme';
+    const ryfaqClientThemeKey = 'ryfaq.client.theme';
+    function readPreference(key, fallback) {
+      return FKUI.getPreference(key, fallback);
+    }
+    function savePreference(key, value) {
+      FKUI.setPreference(key, value);
+    }
+    let clientLanguage = readPreference(clientLanguageKey, 'ar') === 'en' ? 'en' : 'ar';
+    let clientTheme = 'light';
+    let loadedThemeBrand = '';
+
+    function escapeHTML(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
+    }
+
+    function sanitizeRyfaqSurface() {
+      if (presentationBrand?.id !== 'ryfaq') return;
+      const foreignBrand = /FKRETK|Fikratak(?:\s+Digital)?|فكرتك(?:\s+الرقمية)?/gi;
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) node.textContent = node.textContent.replace(foreignBrand, '').trim();
+      for (const element of document.body.querySelectorAll('[aria-label], [title], [alt]')) {
+        for (const attribute of ['aria-label', 'title', 'alt']) {
+          if (element.hasAttribute(attribute)) element.setAttribute(attribute, element.getAttribute(attribute).replace(foreignBrand, '').trim());
+        }
+      }
+      document.title = document.title.replace(foreignBrand, '').trim();
+    }
+
+    function clientText(key) {
+      if (presentationBrand?.id === 'ryfaq') {
+        const ryfaqText = clientLanguage === 'en' ? {
+          brandName: 'Ryfaq', brandTagline: 'Influencer presentation', preparedFor: 'Prepared especially for',
+          intro: 'A curated presentation of creators selected for your campaign.',
+          listTitle: 'Selected creators', listSubtitle: 'Review the profiles and choose the creators that fit your needs.',
+          coverageEyebrow: 'Portfolio · Coverage', coverageTitle: 'Creator work',
+          coverageSubtitle: 'Video examples linked to creators featured in this presentation.', coverageCount: 'videos',
+          footer: 'Prepared for you by Ryfaq.',
+          legalNote: 'The information in this presentation is confidential. Do not copy, share, or disclose it to third parties without written authorization.',
+          workTitle: 'Selected examples', workSubtitle: 'Selected examples of professional work.',
+          videoEmbedTitle: 'Presentation video player'
+        } : {
+          brandName: 'رفاق | Ryfaq', brandTagline: 'عرض المؤثرين', preparedFor: 'عرض مُعدّ خصيصًا لـ',
+          intro: 'عرض مختار لمجموعة من المؤثرين المناسبين لحملتكم.',
+          listTitle: 'المؤثرون المختارون', listSubtitle: 'راجعوا الملفات واختاروا المؤثرين المناسبين لاحتياجاتكم.',
+          coverageEyebrow: 'Portfolio · Coverage', coverageTitle: 'أعمال المؤثرين',
+          coverageSubtitle: 'نماذج فيديو مرتبطة بالمؤثرين المرشحين لهذا العرض.', coverageCount: 'فيديو',
+          footer: 'أُعد هذا العرض لكم من رفاق.',
+          legalNote: 'المعلومات الواردة في هذا العرض سرية. يُمنع نسخها أو مشاركتها أو الإفصاح عنها لطرف ثالث دون موافقة خطية.',
+          workTitle: 'نماذج مختارة', workSubtitle: 'نماذج مختارة من الأعمال الاحترافية.',
+          videoEmbedTitle: 'مشغل فيديو العرض'
+        };
+        if (Object.hasOwn(ryfaqText, key)) return ryfaqText[key];
+      }
+      return clientTexts[clientLanguage]?.[key] || clientTexts.ar[key] || key;
+    }
+
+    function applyBrandIdentity() {
+      if (!presentationBrand) return;
+      const brand = presentationBrand;
+      const primary = /^#[0-9a-f]{6}$/i.test(brand.primaryColor || '') ? brand.primaryColor : '#627269';
+      const accent = /^#[0-9a-f]{6}$/i.test(brand.accentColor || '') ? brand.accentColor : primary;
+      document.body.dataset.brand = brand.id;
+      const brandLink = document.querySelector('a.brand');
+      const favicon = document.querySelector('#brand-favicon');
+      if (brand.id === 'ryfaq') {
+        brandLink.removeAttribute('href');
+        brandLink.removeAttribute('aria-label');
+        brandLink.removeAttribute('title');
+        favicon.removeAttribute('href');
+      } else {
+        brandLink.href = '/';
+        brandLink.setAttribute('aria-label', 'الصفحة الرئيسية');
+        brandLink.title = 'الصفحة الرئيسية';
+        favicon.href = '/assets/fikratak-digital-logo.png';
+      }
+      document.body.style.setProperty('--brand-blue', primary);
+      document.body.style.setProperty('--brand-blue-dark', primary);
+      document.body.style.setProperty('--brand-orange', accent);
+      document.body.style.setProperty('--brand-orange-dark', accent);
+      document.body.style.setProperty('--green', primary);
+      document.body.style.setProperty('--green-dark', primary);
+      document.body.style.setProperty('--coral', accent);
+      document.body.style.setProperty('--coral-hover', accent);
+      document.querySelector('meta[name="theme-color"]').content = primary;
+      const logo = document.querySelector('#brand-logo');
+      const logoPath = brand.logoMode === 'image' ? String(brand.logoPath || '') : '';
+      logo.hidden = !logoPath;
+      if (logoPath) {
+        logo.src = logoPath;
+        logo.alt = clientLanguage === 'en' ? `${brand.nameEn} logo` : `شعار ${brand.nameAr}`;
+      } else {
+        logo.removeAttribute('src');
+        logo.alt = '';
+      }
+    }
+
+    function updateStaticContent() {
+      const brandName = document.querySelector('#brand-name');
+      const brandTagline = document.querySelector('#brand-tagline');
+      const intro = document.querySelector('.intro');
+      const listTitle = document.querySelector('#list-title');
+      const listSubtitle = document.querySelector('#list-subtitle');
+      const footer = document.querySelector('#page-footer');
+      const legalNote = document.querySelector('#legal-note');
+      const loading = document.querySelector('#loading');
+      const workTitle = document.querySelector('#company-work-title');
+      const workSubtitle = document.querySelector('.company-work-copy-primary');
+      const coverageEyebrow = document.querySelector('#coverage-eyebrow');
+      const coverageTitle = document.querySelector('#coverage-title');
+      const coverageSubtitle = document.querySelector('#coverage-subtitle');
+      const coverageCountLabel = document.querySelector('#coverage-count-label');
+      const companyIdentity = document.querySelector('#company-identity');
+      if (brandName) brandName.textContent = clientText('brandName');
+      if (brandTagline) brandTagline.textContent = clientText('brandTagline');
+      if (intro) intro.textContent = clientText('intro');
+      if (listTitle) listTitle.textContent = clientText('listTitle');
+      if (listSubtitle) listSubtitle.textContent = clientText('listSubtitle');
+      if (footer) footer.textContent = clientText('footer');
+      if (legalNote) legalNote.textContent = clientText('legalNote');
+      if (workTitle) workTitle.textContent = clientText('workTitle');
+      if (workSubtitle) workSubtitle.textContent = clientText('workSubtitle');
+      if (coverageEyebrow) coverageEyebrow.textContent = clientText('coverageEyebrow');
+      if (coverageTitle) coverageTitle.textContent = clientText('coverageTitle');
+      if (coverageSubtitle) coverageSubtitle.textContent = clientText('coverageSubtitle');
+      if (coverageCountLabel) coverageCountLabel.textContent = clientText('coverageCount');
+      if (companyIdentity) {
+        companyIdentity.textContent = catalogClientName ? `${clientText('preparedFor')} ${catalogClientName}` : '';
+        companyIdentity.hidden = !catalogClientName;
+      }
+      if (loading && !loading.hidden) loading.textContent = clientText('waiting');
+    }
+
+    function applyClientPresentationSettings() {
+      const currentThemeBrand = presentationBrand?.id === 'ryfaq' ? 'ryfaq' : 'fkretk';
+      if (loadedThemeBrand !== currentThemeBrand) {
+        const themeKey = currentThemeBrand === 'ryfaq' ? ryfaqClientThemeKey : clientThemeKey;
+        clientTheme = readPreference(themeKey, 'light') === 'dark' ? 'dark' : 'light';
+        loadedThemeBrand = currentThemeBrand;
+      }
+      FKUI.setLanguage(clientLanguage);
+      FKUI.setTheme(clientTheme);
+      applyBrandIdentity();
+      const pageCompany = presentationBrand?.nameAr || clientText('brandName');
+      document.title = `${pageCompany} | ${clientLanguage === 'en' ? 'Influencer Presentation' : 'عرض المؤثرين'}`;
+      const langButton = document.querySelector('#client-language-toggle');
+      const themeButton = document.querySelector('#client-theme-toggle');
+      if (langButton) langButton.textContent = clientLanguage === 'ar' ? 'English' : 'العربية';
+      if (themeButton) {
+        const label = clientTheme === 'dark' ? (clientLanguage === 'en' ? 'Light mode' : 'الوضع الفاتح') : (clientLanguage === 'en' ? 'Dark mode' : 'الوضع الداكن');
+        themeButton.innerHTML = FKIcons.icon(clientTheme === 'dark' ? 'sun' : 'moon');
+        themeButton.setAttribute('aria-label', label);
+        themeButton.title = label;
+      }
+      if (presentationBrand) document.querySelector('meta[name="theme-color"]').content = presentationBrand.primaryColor;
+      updateStaticContent();
+    }
+
+    function toggleClientLanguage() {
+      clientLanguage = clientLanguage === 'ar' ? 'en' : 'ar';
+      savePreference(clientLanguageKey, clientLanguage);
+      applyClientPresentationSettings();
+      render();
+    }
+
+    function toggleClientTheme() {
+      clientTheme = clientTheme === 'dark' ? 'light' : 'dark';
+      savePreference(presentationBrand?.id === 'ryfaq' ? ryfaqClientThemeKey : clientThemeKey, clientTheme);
+      applyClientPresentationSettings();
+    }
+
+    function formatCount(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return clientText('noData');
+      const normalized = raw.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+      const match = normalized.replace(/,/g, '').match(/^(\d+(?:\.\d+)?)\s*([KMB])?$/i);
+      if (!match) return raw;
+      const multiplier = { K: 1e3, M: 1e6, B: 1e9 }[(match[2] || '').toUpperCase()] || 1;
+      return new Intl.NumberFormat(clientLanguage === 'en' ? 'en' : 'ar').format(Math.round(Number(match[1]) * multiplier));
+    }
+    function formatCompactCount(value) {
+      const count = window.FikratakFollowerTiers?.parse(value);
+      return count === null || count === undefined
+        ? formatCount(value)
+        : new Intl.NumberFormat(clientLanguage === 'en' ? 'en' : 'ar', { notation: 'compact', maximumFractionDigits: 1 }).format(count);
+    }
+
+    let clientPlatformMarkSequence = 0;
+    function platformMark(platform) {
+      const baseArtwork = {
+        Instagram: '<defs><linearGradient id="client-ig-bg" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#ffb13d"/><stop offset=".48" stop-color="#ee2a7b"/><stop offset="1" stop-color="#6228d7"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#client-ig-bg)"/><rect x="9" y="9" width="22" height="22" rx="7" fill="none" stroke="white" stroke-width="2.8"/><circle cx="20" cy="20" r="5.2" fill="none" stroke="white" stroke-width="2.8"/><circle cx="27.2" cy="12.9" r="1.8" fill="white"/>',
+        TikTok: '<rect width="40" height="40" rx="11" fill="#111"/><path d="M23 7h5c.5 4 2.4 6.5 6 7.4v5.4a16 16 0 0 1-6-2.3v9.2a9 9 0 1 1-8.4-9v5.6a3.7 3.7 0 1 0 2.8 3.6V7z" fill="#25f4ee" transform="translate(-1.2 .5)"/><path d="M23 7h5c.5 4 2.4 6.5 6 7.4v5.4a16 16 0 0 1-6-2.3v9.2a9 9 0 1 1-8.4-9v5.6a3.7 3.7 0 1 0 2.8 3.6V7z" fill="#fe2c55" transform="translate(1 .1)"/><path d="M23 7h5c.5 4 2.4 6.5 6 7.4v5.4a16 16 0 0 1-6-2.3v9.2a9 9 0 1 1-8.4-9v5.6a3.7 3.7 0 1 0 2.8 3.6V7z" fill="white"/>',
+        Snapchat: '<rect width="40" height="40" rx="11" fill="#fffc00"/><path d="M20 7.3c-4 0-6.6 3.1-6.6 7.2 0 1.5.2 3.1.1 4.1-.1 1-1.1.9-2.2.4-1.4-.7-2.6-.9-3.1.1-.5 1 1.1 2.2 2.5 3.1 1.1.7 1.8 1.1 1.2 2.2-.6 1.1-2.3 2.8-5 4.1-.7.4-.7 1.1.1 1.4.8.3 2.3.4 3.4.3.7 0 1 .2 1.2.8.2.6.4.9 1 .8 2-.4 3.7-1.7 7.4-1.7s5.4 1.3 7.4 1.7c.6.1.8-.2 1-.8.2-.6.5-.8 1.2-.8 1.1.1 2.6 0 3.4-.3.8-.3.8-1 .1-1.4-2.7-1.3-4.4-3-5-4.1-.6-1.1.1-1.5 1.2-2.2 1.4-.9 3-2.1 2.5-3.1-.5-1-1.7-.8-3.1-.1-1.1.5-2.1.6-2.2-.4-.1-1 .1-2.6.1-4.1 0-4.1-2.6-7.2-6.6-7.2z" fill="white" stroke="#111" stroke-linejoin="round" stroke-width="2"/>'
+      }[platform];
+      if (!baseArtwork) return '';
+      const artwork = platform === 'Instagram'
+        ? baseArtwork.replaceAll('client-ig-bg', `client-ig-bg-${++clientPlatformMarkSequence}`)
+        : baseArtwork;
+      return `<span class="platform-mark" role="img" aria-label="${escapeHTML(platform)}"><svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">${artwork}</svg></span>`;
+    }
+
+    const CLIENT_COUNTRY_CODES = {
+      'مصر': 'EG', 'egypt': 'EG', 'eg': 'EG',
+      'السعودية': 'SA', 'السعوديه': 'SA', 'المملكة العربية السعودية': 'SA', 'saudi arabia': 'SA', 'saudi': 'SA', 'ksa': 'SA', 'sa': 'SA',
+      'قطر': 'QA', 'qatar': 'QA', 'qa': 'QA',
+      'الإمارات': 'AE', 'الامارات': 'AE', 'الإمارات العربية المتحدة': 'AE', 'united arab emirates': 'AE', 'uae': 'AE', 'ae': 'AE',
+      'الكويت': 'KW', 'kuwait': 'KW', 'kw': 'KW',
+      'البحرين': 'BH', 'bahrain': 'BH', 'bh': 'BH',
+      'عمان': 'OM', 'سلطنة عمان': 'OM', 'oman': 'OM', 'om': 'OM',
+      'الأردن': 'JO', 'الاردن': 'JO', 'jordan': 'JO', 'jo': 'JO',
+      'فلسطين': 'PS', 'palestine': 'PS', 'ps': 'PS',
+      'العراق': 'IQ', 'iraq': 'IQ', 'iq': 'IQ',
+      'لبنان': 'LB', 'lebanon': 'LB', 'lb': 'LB',
+      'سوريا': 'SY', 'سورية': 'SY', 'syria': 'SY', 'sy': 'SY',
+      'اليمن': 'YE', 'yemen': 'YE', 'ye': 'YE',
+      'السودان': 'SD', 'sudan': 'SD', 'sd': 'SD',
+      'ليبيا': 'LY', 'libya': 'LY', 'ly': 'LY',
+      'تونس': 'TN', 'tunisia': 'TN', 'tn': 'TN',
+      'الجزائر': 'DZ', 'algeria': 'DZ', 'dz': 'DZ',
+      'المغرب': 'MA', 'morocco': 'MA', 'ma': 'MA',
+      'تركيا': 'TR', 'turkey': 'TR', 'türkiye': 'TR', 'tr': 'TR',
+      'الولايات المتحدة': 'US', 'united states': 'US', 'usa': 'US', 'us': 'US',
+      'المملكة المتحدة': 'GB', 'united kingdom': 'GB', 'uk': 'GB', 'gb': 'GB',
+      'فرنسا': 'FR', 'france': 'FR', 'fr': 'FR',
+      'ألمانيا': 'DE', 'المانيا': 'DE', 'germany': 'DE', 'de': 'DE',
+      'إيطاليا': 'IT', 'ايطاليا': 'IT', 'italy': 'IT', 'it': 'IT',
+      'إسبانيا': 'ES', 'اسبانيا': 'ES', 'spain': 'ES', 'es': 'ES',
+      'كندا': 'CA', 'canada': 'CA', 'ca': 'CA',
+      'أستراليا': 'AU', 'استراليا': 'AU', 'australia': 'AU', 'au': 'AU',
+      'الصين': 'CN', 'china': 'CN', 'cn': 'CN',
+      'اليابان': 'JP', 'japan': 'JP', 'jp': 'JP',
+      'الهند': 'IN', 'india': 'IN', 'in': 'IN',
+      'باكستان': 'PK', 'pakistan': 'PK', 'pk': 'PK',
+      'الفلبين': 'PH', 'philippines': 'PH', 'ph': 'PH',
+      'نيجيريا': 'NG', 'nigeria': 'NG', 'ng': 'NG',
+      'جنوب أفريقيا': 'ZA', 'south africa': 'ZA', 'za': 'ZA',
+      'كينيا': 'KE', 'kenya': 'KE', 'ke': 'KE',
+      'غانا': 'GH', 'ghana': 'GH', 'gh': 'GH'
+    };
+
+    const CLIENT_COUNTRY_FLAG_ART = {
+      EG: '<rect width="36" height="8" fill="#ce1126"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#000"/><path d="M17 10h2v4h-2zM15 11h1v2h-1zm5 0h1v2h-1z" fill="#c09300"/>',
+      QA: '<rect width="12" height="24" fill="#fff"/><path d="M12 0h24v24H12l3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2z" fill="#8a1538"/>',
+      BH: '<rect width="13" height="24" fill="#fff"/><path d="M13 0h23v24H13l3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2 3-2-3-2z" fill="#ce1126"/>',
+      AE: '<rect x="9" width="27" height="8" fill="#00732f"/><rect x="9" y="8" width="27" height="8" fill="#fff"/><rect x="9" y="16" width="27" height="8" fill="#000"/><rect width="9" height="24" fill="#ff0000"/>',
+      KW: '<rect x="10" width="26" height="8" fill="#007a3d"/><rect x="10" y="8" width="26" height="8" fill="#fff"/><rect x="10" y="16" width="26" height="8" fill="#ce1126"/><path d="M0 0h10v24H0l5-8z" fill="#000"/>',
+      OM: '<rect width="8" height="24" fill="#db161b"/><rect x="8" width="28" height="8" fill="#fff"/><rect x="8" y="8" width="28" height="8" fill="#db161b"/><rect x="8" y="16" width="28" height="8" fill="#008000"/>',
+      JO: '<rect width="36" height="8" fill="#000"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#007a3d"/><path d="M0 0v24l17-12z" fill="#ce1126"/><path d="m5 10 .6 1.5 1.6.1-1.2 1 .4 1.5L5 13.2l-1.4.9.4-1.5-1.2-1 1.6-.1z" fill="#fff"/>',
+      PS: '<rect width="36" height="8" fill="#000"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#009736"/><path d="M0 0v24l17-12z" fill="#ed1c24"/>',
+      IQ: '<rect width="36" height="8" fill="#ce1126"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#000"/><path d="M13 10h10v4H13z" fill="#007a3d"/>',
+      LB: '<rect width="36" height="6" fill="#ed1c24"/><rect y="6" width="36" height="12" fill="#fff"/><rect y="18" width="36" height="6" fill="#ed1c24"/><path d="m18 8-3 6h6zm0 2 2 6h-4z" fill="#007a3d"/>',
+      SY: '<rect width="36" height="8" fill="#007a3d"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#000"/><path d="m10 10 1 2 2.2.2-1.7 1.4.5 2.1-2-1.2-2 1.2.5-2.1-1.7-1.4 2.2-.2zm12 0 1 2 2.2.2-1.7 1.4.5 2.1-2-1.2-2 1.2.5-2.1-1.7-1.4 2.2-.2z" fill="#ce1126"/>',
+      YE: '<rect width="36" height="8" fill="#ce1126"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#000"/>',
+      SD: '<rect width="36" height="8" fill="#d21034"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#000"/><path d="M0 0v24l17-12z" fill="#007229"/>',
+      LY: '<rect width="36" height="6" fill="#e70013"/><rect y="6" width="36" height="12" fill="#000"/><rect y="18" width="36" height="6" fill="#239e46"/><circle cx="18" cy="12" r="3" fill="#fff"/><circle cx="19" cy="11" r="2.4" fill="#000"/><path d="m21 9 .8 1.8 2 .2-1.5 1.2.5 1.9-1.8-1-1.8 1 .5-1.9-1.5-1.2 2-.2z" fill="#fff"/>',
+      TN: '<rect width="36" height="24" fill="#e70013"/><circle cx="18" cy="12" r="7" fill="#fff"/><circle cx="19.5" cy="12" r="4" fill="#e70013"/><circle cx="20.5" cy="12" r="3.2" fill="#fff"/><path d="m22 9 .8 1.8 2 .2-1.5 1.2.5 1.9-1.8-1-1.8 1 .5-1.9-1.5-1.2 2-.2z" fill="#e70013"/>',
+      DZ: '<rect width="18" height="24" fill="#006233"/><rect x="18" width="18" height="24" fill="#fff"/><circle cx="19" cy="12" r="6" fill="#d21034"/><circle cx="21" cy="10.5" r="5" fill="#fff"/><path d="m23 8 .9 2 2.1.2-1.6 1.3.5 2-1.9-1.1-1.9 1.1.5-2-1.6-1.3 2.1-.2z" fill="#d21034"/>',
+      MA: '<rect width="36" height="24" fill="#c1272d"/><path d="m18 5 1.8 5.5h5.8L21 14l1.8 5.5-4.8-3.4-4.8 3.4L15 14l-4.7-3.5h5.8z" fill="none" stroke="#006233" stroke-width="1.3"/>',
+      TR: '<rect width="36" height="24" fill="#e30a17"/><circle cx="14" cy="12" r="6" fill="#fff"/><circle cx="16" cy="11" r="4.8" fill="#e30a17"/><path d="m22 8.5 1 2.1 2.3.2-1.7 1.5.5 2.3-2.1-1.2-2.1 1.2.5-2.3-1.7-1.5 2.3-.2z" fill="#fff"/>',
+      US: '<rect width="36" height="24" fill="#fff"/><path d="M0 0h36v2H0zm0 4h36v2H0zm0 4h36v2H0zm0 4h36v2H0zm0 4h36v2H0zm0 4h36v2H0z" fill="#b22234"/><rect width="16" height="13" fill="#3c3b6e"/><path d="M3 3h1v1H3zm3 0h1v1H6zm3 0h1v1H9zm3 0h1v1h-1zM4.5 6h1v1h-1zm3 0h1v1h-1zm3 0h1v1h-1zM3 9h1v1H3zm3 0h1v1H6zm3 0h1v1H9zm3 0h1v1h-1z" fill="#fff"/>',
+      GB: '<rect width="36" height="24" fill="#012169"/><path d="m0 0 36 24M36 0 0 24" stroke="#fff" stroke-width="6"/><path d="m0 0 36 24M36 0 0 24" stroke="#c8102e" stroke-width="2.4"/><path d="M18 0v24M0 12h36" stroke="#fff" stroke-width="9"/><path d="M18 0v24M0 12h36" stroke="#c8102e" stroke-width="5"/>',
+      FR: '<rect width="12" height="24" fill="#002395"/><rect x="12" width="12" height="24" fill="#fff"/><rect x="24" width="12" height="24" fill="#ed2939"/>',
+      DE: '<rect width="36" height="8" fill="#000"/><rect y="8" width="36" height="8" fill="#d00"/><rect y="16" width="36" height="8" fill="#ffce00"/>',
+      IT: '<rect width="12" height="24" fill="#009246"/><rect x="12" width="12" height="24" fill="#fff"/><rect x="24" width="12" height="24" fill="#ce2b37"/>',
+      ES: '<rect width="36" height="6" fill="#aa151b"/><rect y="6" width="36" height="12" fill="#f1bf00"/><rect y="18" width="36" height="6" fill="#aa151b"/>',
+      CA: '<rect width="9" height="24" fill="#d80621"/><rect x="9" width="18" height="24" fill="#fff"/><rect x="27" width="9" height="24" fill="#d80621"/><path d="m18 6 1.5 3 2.2-.8-.8 3 2 1.2-2 1.1.8 3-2.2-.8-1.5 3-1.5-3-2.2.8.8-3-2-1.1 2-1.2-.8-3 2.2.8z" fill="#d80621"/>',
+      AU: '<rect width="36" height="24" fill="#00008b"/><path d="M0 0 16 10M16 0 0 10" stroke="#fff" stroke-width="2.3"/><path d="M0 0 16 10M16 0 0 10" stroke="#c8102e" stroke-width="1"/><path d="M8 0v10M0 5h16" stroke="#fff" stroke-width="3"/><path d="M8 0v10M0 5h16" stroke="#c8102e" stroke-width="1.5"/><path d="m25 14 .6 1.5 1.5.1-1.2 1 .4 1.4-1.3-.8-1.3.8.4-1.4-1.2-1 1.5-.1zm5-7 .5 1.3 1.3.1-1 .9.3 1.2-1.1-.7-1.1.7.3-1.2-1-.9 1.3-.1z" fill="#fff"/>',
+      CN: '<rect width="36" height="24" fill="#de2910"/><path d="m7 3 1.1 3.2h3.3L8.7 8.1l1 3.2L7 9.4l-2.7 1.9 1-3.2-2.7-1.9h3.3z" fill="#ffde00"/>',
+      JP: '<rect width="36" height="24" fill="#fff"/><circle cx="18" cy="12" r="6.5" fill="#bc002d"/>',
+      IN: '<rect width="36" height="8" fill="#ff9933"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#138808"/><circle cx="18" cy="12" r="3.2" fill="none" stroke="#000080" stroke-width="1"/><circle cx="18" cy="12" r=".7" fill="#000080"/>',
+      PK: '<rect width="36" height="24" fill="#01411c"/><rect width="8" height="24" fill="#fff"/><circle cx="21" cy="12" r="6" fill="#fff"/><circle cx="23" cy="10" r="5" fill="#01411c"/><path d="m26 7 .7 1.5 1.7.2-1.3 1.1.4 1.6-1.5-.9-1.5.9.4-1.6-1.3-1.1 1.7-.2z" fill="#fff"/>',
+      PH: '<rect width="36" height="12" fill="#0038a8"/><rect y="12" width="36" height="12" fill="#ce1126"/><path d="M0 0v24l18-12z" fill="#fff"/><circle cx="6" cy="12" r="1.7" fill="#fcd116"/>',
+      NG: '<rect width="12" height="24" fill="#008751"/><rect x="12" width="12" height="24" fill="#fff"/><rect x="24" width="12" height="24" fill="#008751"/>',
+      ZA: '<rect width="36" height="24" fill="#de3831"/><path d="M0 0v24l16-12z" fill="#002395"/><path d="M0 0h36v7H10l10 5-10 5h26v7H0V17l12-5L0 7z" fill="#ffb81c"/><path d="M0 0h36v5H8l13 7-13 7h28v5H0V16l13-4L0 8z" fill="#007749"/>',
+      KE: '<rect width="36" height="7" fill="#000"/><rect y="8.5" width="36" height="7" fill="#bb0000"/><rect y="17" width="36" height="7" fill="#006600"/><path d="M16 4v16m4-16v16" stroke="#fff" stroke-width="4"/><path d="M18 4v16" stroke="#bb0000" stroke-width="2"/>',
+      GH: '<rect width="36" height="8" fill="#ce1126"/><rect y="8" width="36" height="8" fill="#fcd116"/><rect y="16" width="36" height="8" fill="#006b3f"/><path d="m18 9 1 2.2 2.4.2-1.8 1.5.6 2.3-2.2-1.2-2.2 1.2.6-2.3-1.8-1.5 2.4-.2z" fill="#000"/>'
+    };
+
+    function countryFlag(country) {
+      const key = String(country || '').trim().normalize('NFKC').toLocaleLowerCase('ar')
+        .replace(/[\u064b-\u065f\u0670]/g, '').replace(/[._()-]/g, ' ').replace(/\s+/g, ' ');
+      const code = CLIENT_COUNTRY_CODES[key] || '';
+      if (!code) return '';
+      if (code === 'SA') return '<span class="country-flag" aria-hidden="true"><img src="/assets/flag-saudi-arabia.png" alt="" draggable="false"></span>';
+      const artwork = CLIENT_COUNTRY_FLAG_ART[code];
+      if (artwork) return `<span class="country-flag" aria-hidden="true"><svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg" focusable="false">${artwork}<rect x=".5" y=".5" width="35" height="23" rx="2.5" fill="none" stroke="rgba(0,0,0,.14)"/></svg></span>`;
+      return `<span class="country-flag country-code-fallback" aria-label="${escapeHTML(country)}">${escapeHTML(code)}</span>`;
+    }
+
+    function profileUrl(platform, username) {
+      const handle = String(username || '').trim().replace(/^@/, '');
+      if (!handle) return '';
+      if (platform === 'Instagram') return `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+      if (platform === 'TikTok') return `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
+      if (platform === 'Snapchat') return `https://www.snapchat.com/add/${encodeURIComponent(handle)}`;
+      return '';
+    }
+
+    function platformLabel(platform) {
+      if (clientLanguage === 'en') return platform;
+      return { Instagram: 'إنستجرام', TikTok: 'تيك توك', Snapchat: 'سناب شات' }[platform] || platform;
+    }
+
+    function getValue(details, keys) {
+      const names = Array.isArray(keys) ? keys : [keys];
+      for (const name of names) {
+        const value = details && details[name];
+        if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+      }
+      return '';
+    }
+
+    function decisionText(decision) {
+      if (decision === 'accepted') return clientText('accepted');
+      if (decision === 'rejected') return clientText('rejected');
+      return clientText('pending');
+    }
+
+    function platformIsMain(platform, mainPlatform) {
+      const aliases = { Instagram: ['instagram', 'إنستجرام', 'انستغرام', 'انستجرام'], TikTok: ['tiktok', 'تيك توك'], Snapchat: ['snapchat', 'سناب شات'] };
+      return (aliases[platform] || [platform.toLowerCase()]).includes(String(mainPlatform || '').trim().toLowerCase());
+    }
+
+    function displayFieldValue(value) {
+      return window.FKI18n?.displayValue(value, clientLanguage) || String(value ?? '');
+    }
+
+    function socialRow(label, platform, username, followers, mainPlatform) {
+      if (!username) return '';
+      const url = profileUrl(platform, username);
+      const escapedUsername = escapeHTML(String(username).replace(/^@/, ''));
+      const href = url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">@${escapedUsername}</a>` : `<span>@${escapedUsername}</span>`;
+      const isMain = platformIsMain(platform, mainPlatform);
+      const hasFollowers = followers !== undefined && followers !== null && String(followers).trim() !== '';
+      return `
+        <div class="social-row">
+          <div class="social-label">${platformMark(platform)}<span>${escapeHTML(label)}</span></div>
+          <div class="social-meta">${hasFollowers ? `<span>${formatCompactCount(followers)}</span>` : ''}${isMain ? `<span class="main-platform-mark" title="${clientLanguage === 'en' ? 'Primary account' : 'الحساب الأساسي'}" aria-label="${clientLanguage === 'en' ? 'Primary account' : 'الحساب الأساسي'}">${FKIcons.icon('star', { size: 14 })}</span>` : ''}${href}</div>
+        </div>
+      `;
+    }
+
+    function detailChips(details) {
+      const city = catalogSettings.showCity ? getValue(details, ['City', 'Area']) : '';
+      const country = catalogSettings.showCity ? getValue(details, ['Country']) : '';
+      const categories = catalogSettings.showCategory
+        ? [getValue(details, ['Full Classification']), ...['Categories 1', 'Categories 2', 'Categories 3', 'Categories 4'].map((key) => getValue(details, [key]))].filter((value, index, values) => value && values.indexOf(value) === index)
+        : [];
+      const categoryChips = categories.slice(0, 3).map((value) => `<span class="chip category-chip">${escapeHTML(displayFieldValue(value))}</span>`).join('');
+      const remainingCategories = categories.length > 3 ? `<span class="chip category-chip category-more">+${categories.length - 3}</span>` : '';
+      const segments = [
+        city ? `<span class="chip city-chip">${FKIcons.icon('map-pin', { size: 15 })}<span>${escapeHTML(displayFieldValue(city))}</span></span>` : '',
+        country ? `<span class="chip">${countryFlag(country)}<span>${escapeHTML(displayFieldValue(country))}</span></span>` : '',
+        categoryChips,
+        remainingCategories
+      ].filter(Boolean);
+      return segments.join('');
+    }
+
+    function detailField(details, name) {
+      const key = Object.keys(details || {}).find((item) => item.trim().toLowerCase() === name.toLowerCase());
+      return key ? String(details[key] || '').trim() : '';
+    }
+    function detailIsYes(details, name) {
+      return ['yes', 'y', 'نعم', 'true', '1'].includes(detailField(details, name).toLowerCase());
+    }
+
+    function avatarFallback(details) {
+      const gender = detailField(details, 'Gender').toLowerCase();
+      const female = ['female', 'f', 'أنثى', 'انثى'].includes(gender);
+      if (female) {
+        const hijab = detailField(details, 'Hijab').toLowerCase();
+        return ['yes', 'y', 'نعم', 'true', '1'].includes(hijab)
+          ? '/assets/avatars/female-hijab.svg' : '/assets/avatars/female.svg';
+      }
+      if (['male', 'm', 'ذكر'].includes(gender)) return '/assets/avatars/male.svg';
+      return '/assets/avatars/neutral.svg';
+    }
+
+    function setInfluencerAvatar(host, influencer) {
+      const image = document.createElement('img');
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      const providedFallback = String(influencer.placeholderImage || '');
+      const fallback = /^\/assets\/avatars\/(?:female(?:-hijab)?|male|neutral)\.svg$/.test(providedFallback)
+        ? providedFallback : avatarFallback(influencer.details);
+      const profileImage = String(influencer.profileImage || '');
+      image.src = /^\/profile-images\/[a-f0-9]{32}(?:\?v=[a-f0-9]{12})?$/i.test(profileImage)
+        ? profileImage : fallback;
+      image.addEventListener('error', () => {
+        if (image.getAttribute('src') !== fallback) image.src = fallback;
+      }, { once: true });
+      host.replaceChildren(image);
+    }
+
+    function updatePresentationStats() {
+      const counts = { accepted: 0, rejected: 0, pending: 0 };
+      const cities = new Set();
+      let followers = 0;
+      for (const influencer of influencers) {
+        counts[influencer.decision || 'pending'] += 1;
+        const details = influencer.details || {};
+        const city = detailField(details, 'City');
+        if (city) cities.add(city);
+        for (const value of [influencer.instagramFollowers, influencer.tiktokFollowers, influencer.snapchatFollowers]) {
+          followers += window.FikratakFollowerTiers?.parse(value) || 0;
+        }
+      }
+      document.querySelector('#accepted-count').textContent = new Intl.NumberFormat(clientLanguage).format(counts.accepted);
+      document.querySelector('#rejected-count').textContent = new Intl.NumberFormat(clientLanguage).format(counts.rejected);
+      document.querySelector('#pending-count').textContent = new Intl.NumberFormat(clientLanguage).format(counts.pending);
+      document.querySelector('#hero-influencer-count').textContent = new Intl.NumberFormat(clientLanguage).format(influencers.length);
+      document.querySelector('#hero-follower-count').textContent = new Intl.NumberFormat(clientLanguage, { notation: 'compact', maximumFractionDigits: 1 }).format(followers);
+      document.querySelector('#hero-city-count').textContent = new Intl.NumberFormat(clientLanguage).format(cities.size);
+      const completed = influencers.length - counts.pending;
+      const progress = document.querySelector('.decision-progress');
+      const percentage = influencers.length ? Math.round(completed / influencers.length * 100) : 0;
+      progress.setAttribute('aria-valuenow', String(percentage));
+      progress.setAttribute('aria-label', `${clientLanguage === 'en' ? 'Decisions confirmed' : 'نسبة القرارات المؤكدة'}: ${new Intl.NumberFormat(clientLanguage).format(percentage)}%`);
+      document.querySelector('#decision-progress-bar').style.width = `${percentage}%`;
+      document.querySelector('#decision-progress-label').textContent = `${new Intl.NumberFormat(clientLanguage).format(percentage)}%`;
+      const sendButton = document.querySelector('#send-decisions');
+      sendButton.textContent = clientText('sendDecisions');
+      sendButton.disabled = !influencers.some((influencer) => influencer.decision !== influencer.savedDecision)
+        || decisionRequests.size > 0;
+    }
+
+    function openCreatorDetails(card) {
+      const clone = card.cloneNode(true);
+      clone.classList.add('creator-details-card');
+      clone.removeAttribute('tabindex');
+      clone.querySelector('.actions')?.remove();
+      document.querySelector('#creator-details-content').replaceChildren(clone);
+      document.querySelector('#creator-details-dialog').showModal();
+    }
+
+    function renderCardSkeletons() {
+      const host = document.querySelector('#cards');
+      host.setAttribute('aria-busy', 'true');
+      host.innerHTML = Array.from({ length: 6 }, () => '<div class="card-skeleton"><i></i><b></b><span></span><span></span></div>').join('');
+    }
+
+    function buildDetailsList(details) {
+      const labels = {
+        gender: ['الجنس', 'Gender'],
+        verified: ['موثّق من المنصة', 'Platform verified'],
+        mawthouq: ['شهادة موثوق', 'Mawthouq certificate'],
+        speak: ['أسلوب المحتوى', 'Content style'],
+        language: ['اللغة', 'Language'],
+        'face appearance': ['ظهور الوجه في المحتوى', 'Face shown in content'],
+        hijab: ['الحجاب', 'Hijab'],
+        city: ['المدينة', 'City'],
+        area: ['المنطقة', 'Area'],
+        country: ['الدولة', 'Country'],
+        classification: ['التصنيف العام', 'General classification'],
+        'full classification': ['التصنيف الكامل', 'Full classification'],
+        'categories 1': ['الاهتمام الأول', 'Category 1'],
+        'categories 2': ['الاهتمام الثاني', 'Category 2'],
+        'categories 3': ['الاهتمام الثالث', 'Category 3'],
+        'categories 4': ['الاهتمام الرابع', 'Category 4']
+      };
+      const displayLabel = (key) => labels[key.trim().toLowerCase()]?.[clientLanguage === 'en' ? 1 : 0] || key;
+      const entries = Object.entries(details || {}).filter(([key, value]) => {
+        if (!key || !String(value ?? '').trim()) return false;
+        const normalizedKey = key.trim().toLowerCase();
+        if (/phone|mobile|contact|email|e-mail|whatsapp|address|postal|password|secret|token/.test(normalizedKey)
+          || ['number', 'country code', 'full_mobile_number'].includes(normalizedKey)) return false;
+        if (!catalogSettings.showCity && ['City', 'Area', 'Country'].includes(key)) return false;
+        if (!catalogSettings.showCategory && ['Full Classification', 'Classification', 'Categories 1', 'Categories 2', 'Categories 3', 'Categories 4'].includes(key)) return false;
+        return true;
+      }).slice(0, 10);
+      if (!catalogSettings.showDetails) return '';
+      if (!entries.length) return `<p class="detail-empty">${escapeHTML(clientText('noDetails'))}</p>`;
+      return entries.map(([key, value]) => `
+        <div class="detail-item"><span>${escapeHTML(displayLabel(key))}</span><strong>${escapeHTML(displayFieldValue(String(value).replace(/\s+/g, ' ').trim()))}</strong></div>
+      `).join('');
+    }
+
+    function showNotice(message) {
+      statusEl.textContent = message || '';
+      statusEl.classList.toggle('visible', Boolean(message));
+      statusEl.classList.toggle('error', Boolean(message) && /تعذر|غير صالح|غير موجود|unavailable|could not|invalid|not in/i.test(message));
+    }
+
+    function requestDecision(influencerId, decision) {
+      const target = influencers.find((item) => item.influencerId === influencerId);
+      if (!target || !token || pendingDecision || decisionRequests.has(influencerId)) return;
+      if (decision === 'accepted') {
+        stageDecision(target, decision);
+        return;
+      }
+      pendingDecision = { target, decision };
+      const reverting = decision === 'reverted';
+      document.querySelector('#decision-dialog-title').textContent = clientText(reverting ? 'confirmRevertTitle' : 'confirmRejectTitle');
+      document.querySelector('#decision-dialog-copy').textContent = clientText(reverting ? 'confirmRevert' : 'confirmReject')
+        .replace('هذا المعلن', `«${target.name || 'المعلن'}»`)
+        .replace('this creator', `“${target.name || 'creator'}”`);
+      const dialogMessage = document.querySelector('#decision-dialog-message');
+      dialogMessage.textContent = '';
+      dialogMessage.classList.remove('error');
+      document.querySelector('#decision-confirm').textContent = clientText(reverting ? 'confirmRevertAction' : 'confirmRejectAction');
+      document.querySelector('#decision-confirm').disabled = false;
+      document.querySelector('#decision-cancel').disabled = false;
+      document.querySelector('#decision-dialog').showModal();
+    }
+
+    function stageDecision(target, decision) {
+      target.decision = decision === 'reverted' ? 'pending' : decision;
+      pendingDecision = null;
+      document.querySelector('#decision-dialog').close();
+      render();
+      showNotice(clientText('pendingDecisionChanges'));
+    }
+
+    async function sendDecisions() {
+      const changed = influencers.filter((influencer) => influencer.decision !== influencer.savedDecision);
+      if (!changed.length) {
+        showNotice(clientText('noDecisionChanges'));
+        return;
+      }
+      const decisions = changed.map((influencer) => ({
+        influencerId: influencer.influencerId,
+        decision: influencer.decision === 'pending' ? 'reverted' : influencer.decision
+      }));
+      for (const item of decisions) decisionRequests.set(item.influencerId, item.decision);
+      render();
+      try {
+        const response = await fetch(`/api/client-catalog/${encodeURIComponent(token)}/decisions`, {
+          method: 'POST',
+          credentials: 'omit',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decisions })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || clientText('saveError'));
+        for (const saved of result.decisions || []) {
+          const target = influencers.find((influencer) => influencer.influencerId === saved.influencerId);
+          if (!target) continue;
+          target.decision = saved.decision;
+          target.savedDecision = saved.decision;
+        }
+        const toast = document.querySelector('#decision-toast');
+        toast.textContent = clientText('successDecisionsSent');
+        toast.classList.add('visible');
+        clearTimeout(window.clientDecisionToastTimer);
+        window.clientDecisionToastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
+        showNotice(clientText('successDecisionsSent'));
+      } catch (error) {
+        showNotice(clientText(error.message) || clientText('saveError'));
+      } finally {
+        decisionRequests.clear();
+        render();
+      }
+    }
+
+    function loadYouTubeIframeApi() {
+      if (window.YT?.Player) return Promise.resolve();
+      if (youtubeIframeApiPromise) return youtubeIframeApiPromise;
+      youtubeIframeApiPromise = new Promise((resolve, reject) => {
+        const previousReady = window.onYouTubeIframeAPIReady;
+        let settled = false;
+        const finish = (error) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          if (error && window.onYouTubeIframeAPIReady === onReady) {
+            window.onYouTubeIframeAPIReady = previousReady;
+          }
+          if (error) reject(error);
+          else resolve();
+        };
+        const timeout = window.setTimeout(() => {
+          const error = new Error('YouTube player API timed out.');
+          error.code = 'timeout';
+          finish(error);
+        }, 12000);
+        const onReady = () => {
+          if (settled) return;
+          if (typeof previousReady === 'function') {
+            try { previousReady(); }
+            catch (error) { console.error('Existing YouTube API callback failed:', error); }
+          }
+          finish();
+        };
+        window.onYouTubeIframeAPIReady = onReady;
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        script.onerror = () => {
+          const error = new Error('YouTube player API could not be loaded.');
+          error.code = 'network';
+          finish(error);
+        };
+        document.head.append(script);
+      }).catch((error) => {
+        youtubeIframeApiPromise = null;
+        throw error;
+      });
+      return youtubeIframeApiPromise;
+    }
+
+    function showWorkVideoFallback(video, allowExternal = false, message = clientText('videoUnavailable')) {
+      const fallback = document.querySelector('#work-video-fallback');
+      const link = document.querySelector('#work-video-youtube-link');
+      fallback.textContent = message;
+      link.textContent = clientText('watchOnYoutube');
+      link.href = `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
+      link.hidden = !allowExternal;
+      fallback.hidden = false;
+    }
+
+    function youtubePlayerErrorMessage(code) {
+      if ([101, 150].includes(code)) return clientText('videoNoEmbed');
+      if (code === 100) return clientText('videoUnavailable');
+      if (code === 2) return clientText('videoInvalid');
+      if (code === 5) return clientText('videoPlaybackError');
+      if (code === 153) return clientText('videoReferrerError');
+      return `${clientText('videoUnknownError')} (${code}).`;
+    }
+
+    function playerApiLoadErrorMessage(error) {
+      if (error?.code === 'timeout') return clientText('videoApiTimeout');
+      if (error?.code === 'network') return clientText('videoNetworkError');
+      return clientText('videoPlayerError');
+    }
+
+    function playWorkVideo(video) {
+      const dialog = document.querySelector('#work-video-dialog');
+      if (!dialog.open || selectedWorkVideoId !== video.id) return;
+      document.querySelector('#work-video-fallback').hidden = true;
+      document.querySelector('#work-video-youtube-link').hidden = true;
+      if (selectedWorkPlayer) {
+        selectedWorkPlayer.destroy();
+        selectedWorkPlayer = null;
+      }
+      const host = document.querySelector('#work-video-player');
+      host.replaceChildren();
+      host.dataset.playerState = 'loading';
+      const iframe = document.createElement('iframe');
+      iframe.id = 'work-video-iframe';
+      iframe.title = video.title || clientText('videoEmbedTitle');
+      iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+      const embedUrl = new URL(`https://www.youtube.com/embed/${encodeURIComponent(video.videoId)}`);
+      embedUrl.searchParams.set('autoplay', '1');
+      embedUrl.searchParams.set('controls', '1');
+      embedUrl.searchParams.set('disablekb', '0');
+      embedUrl.searchParams.set('enablejsapi', '1');
+      embedUrl.searchParams.set('fs', '1');
+      embedUrl.searchParams.set('playsinline', '1');
+      embedUrl.searchParams.set('rel', '0');
+      embedUrl.searchParams.set('origin', location.origin);
+      host.append(iframe);
+      iframe.src = embedUrl.href;
+
+      const attachPlayerApi = () => {
+        if (selectedWorkVideoId !== video.id || !dialog.open || !iframe.isConnected) return;
+        try {
+          selectedWorkPlayer = new window.YT.Player(iframe.id, {
+            playerVars: { autoplay: 1, controls: 1, disablekb: 0, enablejsapi: 1, fs: 1, playsinline: 1, rel: 0, origin: location.origin },
+            events: {
+              onReady: (event) => {
+                if (selectedWorkVideoId !== video.id) return;
+                const playerFrame = event.target.getIframe();
+                playerFrame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+                playerFrame.allowFullscreen = true;
+                playerFrame.referrerPolicy = 'strict-origin-when-cross-origin';
+                playerFrame.title = video.title || clientText('videoEmbedTitle');
+                host.dataset.playerState = 'ready';
+                event.target.playVideo();
+              },
+              onStateChange: (event) => {
+                if (selectedWorkVideoId === video.id) host.dataset.playerState = String(event.data);
+              },
+              onError: (event) => {
+                if (selectedWorkVideoId !== video.id) return;
+                const canWatchExternally = [101, 150].includes(event.data);
+                event.target.destroy();
+                if (selectedWorkPlayer === event.target) selectedWorkPlayer = null;
+                host.replaceChildren();
+                host.dataset.playerState = 'unavailable';
+                showWorkVideoFallback(video, canWatchExternally, youtubePlayerErrorMessage(event.data));
+              }
+            }
+          });
+        } catch (error) {
+          console.error('YouTube player initialization failed:', error);
+          host.dataset.playerState = 'api-error';
+          showWorkVideoFallback(video, false, clientText('videoPlayerError'));
+        }
+      };
+
+      if (window.YT?.Player) attachPlayerApi();
+      else loadYouTubeIframeApi().then(attachPlayerApi).catch((error) => {
+        if (selectedWorkVideoId === video.id && dialog.open) {
+          host.dataset.playerState = error?.code || 'api-error';
+          showWorkVideoFallback(video, false, playerApiLoadErrorMessage(error));
+        }
+      });
+    }
+
+    function openWorkVideo(video) {
+      const dialog = document.querySelector('#work-video-dialog');
+      if (dialog.open) closeWorkVideoDialog();
+      selectedWorkVideoTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      selectedWorkVideoId = video.id;
+      document.querySelector('#work-video-dialog-title').textContent = video.title || clientText('videoEmbedTitle');
+      document.querySelector('#work-video-fallback').hidden = true;
+      document.querySelector('#work-video-youtube-link').hidden = true;
+      const host = document.querySelector('#work-video-player');
+      host.replaceChildren();
+      host.dataset.playerState = 'idle';
+      const placeholder = document.createElement('div');
+      placeholder.className = 'work-player-placeholder';
+      placeholder.textContent = clientText('waiting');
+      host.append(placeholder);
+      dialog.showModal();
+      document.querySelector('#work-video-close').focus({ preventScroll: true });
+      playWorkVideo(video);
+    }
+
+    function closeWorkVideoDialog() {
+      const dialog = document.querySelector('#work-video-dialog');
+      const returnFocus = selectedWorkVideoTrigger;
+      selectedWorkVideoTrigger = null;
+      if (dialog.open) dialog.close();
+      if (selectedWorkPlayer) selectedWorkPlayer.destroy();
+      selectedWorkPlayer = null;
+      selectedWorkVideoId = '';
+      const host = document.querySelector('#work-video-player');
+      host.replaceChildren();
+      delete host.dataset.playerState;
+      document.querySelector('#work-video-fallback').hidden = true;
+      document.querySelector('#work-video-youtube-link').hidden = true;
+      if (returnFocus?.isConnected) requestAnimationFrame(() => returnFocus.focus({ preventScroll: true }));
+    }
+
+    function bindCompanyWorkGalleryNavigation() {
+      const gallery = document.querySelector('#company-work-videos');
+      const controls = document.querySelector('.company-work-controls');
+      if (gallery.dataset.navigationReady === 'true') return;
+      gallery.dataset.navigationReady = 'true';
+      const updateControls = () => {
+        controls.querySelectorAll('button').forEach((button) => {
+          button.disabled = gallery.scrollWidth <= gallery.clientWidth + 1;
+        });
+      };
+      controls.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-video-scroll]');
+        if (!button) return;
+        const direction = getComputedStyle(gallery).direction === 'rtl' ? -1 : 1;
+        gallery.scrollBy({
+          left: (button.dataset.videoScroll === 'next' ? 1 : -1) * direction * gallery.clientWidth * .85,
+          behavior: 'smooth'
+        });
+      });
+      gallery.addEventListener('scroll', updateControls, { passive: true });
+      window.addEventListener('resize', updateControls);
+      let pointerStart = 0;
+      let scrollStart = 0;
+      let dragged = false;
+      gallery.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0) return;
+        pointerStart = event.clientX;
+        scrollStart = gallery.scrollLeft;
+        dragged = false;
+      });
+      gallery.addEventListener('pointermove', (event) => {
+        if (event.pointerType !== 'mouse' || !(event.buttons & 1)) return;
+        const distance = event.clientX - pointerStart;
+        if (Math.abs(distance) < 5) return;
+        if (!dragged && gallery.hasPointerCapture && !gallery.hasPointerCapture(event.pointerId)) {
+          gallery.setPointerCapture(event.pointerId);
+        }
+        dragged = true;
+        gallery.classList.add('is-dragging');
+        gallery.scrollLeft = scrollStart + distance * (getComputedStyle(gallery).direction === 'rtl' ? 1 : -1);
+        event.preventDefault();
+      });
+      const endDrag = () => {
+        gallery.classList.remove('is-dragging');
+        if (dragged) setTimeout(() => { dragged = false; }, 0);
+      };
+      gallery.addEventListener('pointerup', endDrag);
+      gallery.addEventListener('pointercancel', endDrag);
+      gallery.addEventListener('click', (event) => {
+        if (!dragged) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dragged = false;
+      }, true);
+      updateControls();
+    }
+
+    function renderCompanyWorkGallery() {
+      const section = document.querySelector('#company-work-gallery');
+      const videos = catalogSettings.showCompanyWork ? catalogSettings.companyWorkVideos : [];
+      section.hidden = !videos.length;
+      const gallery = document.querySelector('#company-work-videos');
+      if (!videos.length) {
+        gallery.replaceChildren();
+        if (selectedWorkVideoId && !catalogSettings.coverageVideos.some((video) => video.id === selectedWorkVideoId)) closeWorkVideoDialog();
+        return;
+      }
+      gallery.replaceChildren();
+      const previousButton = document.querySelector('[data-video-scroll="previous"]');
+      const nextButton = document.querySelector('[data-video-scroll="next"]');
+      previousButton.setAttribute('aria-label', clientText('previousVideos'));
+      nextButton.setAttribute('aria-label', clientText('nextVideos'));
+      previousButton.innerHTML = FKIcons.icon(clientLanguage === 'ar' ? 'arrow-right' : 'arrow-left');
+      nextButton.innerHTML = FKIcons.icon(clientLanguage === 'ar' ? 'arrow-left' : 'arrow-right');
+      bindCompanyWorkGalleryNavigation();
+      videos.forEach((video) => {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'work-video-card';
+        card.setAttribute('aria-label', `${clientText('playVideo')}: ${video.title || clientText('workTitle')}`);
+        const preview = document.createElement('span');
+        preview.className = 'work-video-preview';
+        const thumbnail = document.createElement('img');
+        thumbnail.src = `https://i.ytimg.com/vi/${encodeURIComponent(video.videoId)}/hqdefault.jpg`;
+        thumbnail.alt = '';
+        thumbnail.loading = 'lazy';
+        thumbnail.decoding = 'async';
+        thumbnail.draggable = false;
+        thumbnail.referrerPolicy = 'no-referrer';
+        thumbnail.addEventListener('error', () => {
+          thumbnail.remove();
+          preview.classList.add('is-placeholder');
+        }, { once: true });
+        const playLabel = document.createElement('span');
+        playLabel.className = 'work-video-play';
+        playLabel.setAttribute('aria-hidden', 'true');
+        playLabel.innerHTML = FKIcons.icon('play');
+        preview.append(thumbnail, playLabel);
+        if (video.title) {
+          const badge = document.createElement('span');
+          badge.className = 'work-video-badge';
+          badge.textContent = video.title;
+          preview.append(badge);
+        }
+        card.append(preview);
+        card.addEventListener('click', () => openWorkVideo(video));
+        gallery.append(card);
+      });
+      if (selectedWorkVideoId && !videos.some((video) => video.id === selectedWorkVideoId)
+        && !catalogSettings.coverageVideos.some((video) => video.id === selectedWorkVideoId)) {
+        closeWorkVideoDialog();
+      }
+      revealPresentationElements(section);
+    }
+
+    function renderCoverageGallery() {
+      const section = document.querySelector('#coverage-gallery');
+      const host = document.querySelector('#coverage-videos');
+      const videos = Array.isArray(catalogSettings.coverageVideos) ? catalogSettings.coverageVideos : [];
+      const validVideos = videos.filter((video) => /^[A-Za-z0-9_-]{11}$/.test(String(video.videoId || '')));
+      section.hidden = !validVideos.length;
+      host.querySelectorAll('[data-reveal]').forEach((element) => revealObserver?.unobserve(element));
+      host.replaceChildren();
+      document.querySelector('#coverage-count').textContent = new Intl.NumberFormat(clientLanguage === 'ar' ? 'ar' : 'en').format(validVideos.length);
+      for (const [index, video] of validVideos.entries()) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'coverage-video-card';
+        card.dataset.reveal = '';
+        card.style.setProperty('--reveal-delay', `${Math.min(index % 4 * 70, 210)}ms`);
+        card.setAttribute('aria-label', `${clientText('playVideo')}: ${video.title || clientText('coverageTitle')}`);
+        const preview = document.createElement('span');
+        preview.className = 'coverage-preview';
+        const thumbnail = document.createElement('img');
+        thumbnail.src = `https://i.ytimg.com/vi/${encodeURIComponent(video.videoId)}/hqdefault.jpg`;
+        thumbnail.alt = '';
+        thumbnail.loading = 'lazy';
+        thumbnail.decoding = 'async';
+        thumbnail.referrerPolicy = 'no-referrer';
+        thumbnail.addEventListener('error', () => thumbnail.remove(), { once: true });
+        const play = document.createElement('span');
+        play.className = 'coverage-play';
+        play.setAttribute('aria-hidden', 'true');
+        play.innerHTML = FKIcons.icon('play');
+        preview.append(thumbnail, play);
+        const title = document.createElement('span');
+        title.className = 'coverage-video-title';
+        title.textContent = video.title || clientText('coverageTitle');
+        const creator = document.createElement('span');
+        creator.className = 'coverage-video-creator';
+        creator.textContent = video.influencerName || '';
+        card.append(preview, title, creator);
+        const descriptionText = String(video.description || '').trim();
+        if (descriptionText) {
+          const description = document.createElement('span');
+          description.className = 'coverage-video-description';
+          description.textContent = descriptionText;
+          card.append(description);
+        }
+        card.addEventListener('click', () => openWorkVideo(video));
+        host.append(card);
+      }
+      if (selectedWorkVideoId && !validVideos.some((video) => video.id === selectedWorkVideoId)
+        && !catalogSettings.companyWorkVideos.some((video) => video.id === selectedWorkVideoId)) {
+        closeWorkVideoDialog();
+      }
+      revealPresentationElements(section);
+    }
+
+    function render() {
+      cards.querySelectorAll('[data-reveal]').forEach((element) => revealObserver?.unobserve(element));
+      cards.replaceChildren();
+      cards.setAttribute('aria-busy', 'false');
+      updatePresentationStats();
+      if (!influencers.length) {
+        loading.hidden = false;
+        loading.textContent = clientText('noCatalog');
+        renderCompanyWorkGallery();
+        renderCoverageGallery();
+        sanitizeRyfaqSurface();
+        return;
+      }
+      loading.hidden = true;
+      influencers.forEach((influencer) => {
+        const revealIndex = cards.children.length;
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.dataset.reveal = '';
+        card.style.setProperty('--reveal-delay', `${Math.min(revealIndex % 4 * 65, 195)}ms`);
+        const name = influencer.name || (clientLanguage === 'en' ? 'Influencer' : 'مؤثر');
+        const escapedName = escapeHTML(name);
+        const mainUsername = escapeHTML(String(influencer.mainUsername || '').replace(/^@/, ''));
+        const bestPlatform = String(influencer.bestPlatform || '').trim();
+        const decision = influencer.decision || 'pending';
+        const decisionClass = decision === 'accepted' ? 'accepted' : decision === 'rejected' ? 'rejected' : 'pending';
+        const decisionLabel = decision === 'accepted' ? clientText('accepted')
+          : decision === 'rejected' ? clientText('rejected') : clientText('pendingDecisionStatus');
+        const decisionMark = decisionClass === 'accepted' ? '✓' : decisionClass === 'rejected' ? '✕' : '';
+        const busyDecision = decisionRequests.get(influencer.influencerId);
+        const busy = busyDecision !== undefined;
+        const decisionActions = catalogSettings.decisionsEnabled
+          ? decision === 'pending'
+            ? `<div class="actions">
+                 <button type="button" class="button button-accept" data-action="accept" data-id="${escapeHTML(influencer.influencerId)}" ${busy ? 'disabled' : ''} ${busyDecision === 'accepted' ? 'aria-busy="true"' : ''}>${busyDecision === 'accepted' ? clientText('savingDecision') : `${FKIcons.icon('badge-check', { size: 18 })}${clientText('approveOffer')}`}</button>
+                 <button type="button" class="button button-reject" data-action="reject" data-id="${escapeHTML(influencer.influencerId)}" ${busy ? 'disabled' : ''} ${busyDecision === 'rejected' ? 'aria-busy="true"' : ''}>${busyDecision === 'rejected' ? clientText('savingDecision') : clientText('rejectOffer')}</button>
+               </div>`
+            : `<div class="actions">
+                 <button type="button" class="button button-revert" data-action="revert" data-id="${escapeHTML(influencer.influencerId)}" ${busy ? 'disabled' : ''} ${busyDecision === 'reverted' ? 'aria-busy="true"' : ''}>${busyDecision === 'reverted' ? clientText('savingDecision') : clientText('revertDecision')}</button>
+               </div>`
+          : '';
+        card.setAttribute('aria-busy', String(busy));
+        card.dataset.decision = decisionClass;
+        const normalizedPlatform = bestPlatform.toLowerCase();
+        card.dataset.mainPlatform = normalizedPlatform.includes('snap') || normalizedPlatform.includes('سناب') ? 'snapchat'
+          : normalizedPlatform.includes('insta') || normalizedPlatform.includes('انست') ? 'instagram'
+            : normalizedPlatform.includes('tik') || normalizedPlatform.includes('تيك') ? 'tiktok' : 'default';
+        card.dataset.influencerId = influencer.influencerId;
+        card.innerHTML = `
+          <div class="creator">
+            <div class="avatar" aria-label="${escapeHTML(name)}"></div>
+            <div class="creator-info">
+              <h3>${escapedName}</h3>
+              <div class="creator-meta">${mainUsername ? `<span class="creator-handle">@${mainUsername}</span>` : ''}<span class="creator-badges">${detailIsYes(influencer.details || {}, 'Mawthouq') ? FKBadge.badge('mawthouq', clientLanguage, 'sm') : ''}${detailIsYes(influencer.details || {}, 'Verified') ? FKBadge.badge('verified', clientLanguage, 'sm') : ''}</span></div>
+            </div>
+          </div>
+          <div class="chip-row">${detailChips(influencer.details || {})}</div>
+          <div class="social-list">
+            ${socialRow(platformLabel('Instagram'), 'Instagram', influencer.instagramUsername, influencer.instagramFollowers, bestPlatform)}
+            ${socialRow(platformLabel('TikTok'), 'TikTok', influencer.tiktokUsername, influencer.tiktokFollowers, bestPlatform)}
+            ${socialRow(platformLabel('Snapchat'), 'Snapchat', influencer.snapchatUsername, influencer.snapchatFollowers, bestPlatform)}
+          </div>
+          <div class="decision-row">
+            <span class="decision-pill ${decisionClass}" aria-label="${escapeHTML(decisionLabel)}" title="${escapeHTML(decisionLabel)}">${decisionMark ? `<span aria-hidden="true">${decisionMark}</span>` : ''}${escapeHTML(decisionLabel)}</span>
+          </div>
+          ${catalogSettings.showDetails ? `<details class="full-details">
+                <summary>${clientText('details')}</summary>
+            <div class="detail-list">${buildDetailsList(influencer.details || {})}</div>
+          </details>` : ''}
+          ${decisionActions}
+        `;
+        const avatarBox = card.querySelector('.avatar');
+        setInfluencerAvatar(avatarBox, influencer);
+        card.tabIndex = 0;
+        card.addEventListener('click', (event) => {
+          if (event.target.closest('a, button, details, summary')) return;
+          openCreatorDetails(card);
+        });
+        card.addEventListener('keydown', (event) => {
+          if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            openCreatorDetails(card);
+          }
+        });
+        cards.append(card);
+      });
+      cards.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const id = button.dataset.id;
+          const action = button.dataset.action;
+          requestDecision(id, action === 'accept' ? 'accepted' : action === 'reject' ? 'rejected' : 'reverted');
+        });
+      });
+      renderCompanyWorkGallery();
+      renderCoverageGallery();
+      revealPresentationElements(cards);
+      sanitizeRyfaqSurface();
+    }
+
+    document.querySelector('#decision-confirm').addEventListener('click', () => {
+      if (!pendingDecision) return;
+      document.querySelector('#decision-dialog-message').textContent = '';
+      document.querySelector('#decision-dialog-message').classList.remove('error');
+      document.querySelector('#decision-confirm').disabled = true;
+      document.querySelector('#decision-cancel').disabled = true;
+      stageDecision(pendingDecision.target, pendingDecision.decision);
+    });
+    document.querySelector('#decision-cancel').addEventListener('click', () => {
+      pendingDecision = null;
+      document.querySelector('#decision-dialog').close();
+    });
+    document.querySelector('#decision-dialog').addEventListener('cancel', () => { pendingDecision = null; });
+
+    async function loadCatalog() {
+      if (!token && !previewMode) {
+        loading.hidden = false;
+        loading.className = 'error';
+        loading.textContent = clientText('loadError');
+        return;
+      }
+      try {
+        const apiUrl = previewMode
+          ? `/api/client-catalogs/${encodeURIComponent(previewCatalogId)}/client-preview`
+          : `/api/client-catalog/${encodeURIComponent(token)}`;
+        const response = await fetch(apiUrl, {
+          cache: 'no-store',
+          credentials: previewMode ? 'same-origin' : 'omit'
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'رابط العرض غير متاح.');
+        catalogClientName = String(result.clientName || result.companyName || '').trim();
+        catalogSettings = {
+          showCity: result.showCity !== false,
+          showCategory: result.showCategory !== false,
+          showDetails: result.showDetails === true,
+           decisionsEnabled: !previewMode && result.decisionsEnabled !== false,
+           showCompanyWork: result.showCompanyWork === true,
+          companyWorkVideos: Array.isArray(result.companyWorkVideos) ? result.companyWorkVideos : [],
+          coverageVideos: Array.isArray(result.coverageVideos) ? result.coverageVideos : []
+        };
+        presentationBrand = result.brand || null;
+        applyClientPresentationSettings();
+        document.querySelector('#company-title').textContent = result.offerName || result.companyName || clientText('brandName');
+        if (previewMode) {
+          const returnLink = document.querySelector('#preview-return');
+          returnLink.hidden = false;
+          try {
+            const snapshot = JSON.parse(sessionStorage.getItem('fikratak-client-prep-return-v1') || 'null');
+            const returnUrl = snapshot?.returnUrl ? new URL(snapshot.returnUrl, location.origin) : null;
+            if (returnUrl?.origin === location.origin) returnLink.href = returnUrl.href;
+          } catch {
+            returnLink.href = '/?restore-client-preparation=1';
+          }
+          returnLink.addEventListener('click', (event) => {
+            if (history.length > 1) {
+              event.preventDefault();
+              history.back();
+            }
+          }, { once: true });
+        }
+        influencers = Array.isArray(result.influencers) ? result.influencers.map((influencer) => ({
+          ...influencer,
+          decision: influencer.decision || 'pending',
+          savedDecision: influencer.decision || 'pending'
+        })) : [];
+        updateStaticContent();
+        render();
+      } catch (error) {
+        loading.hidden = false;
+        loading.className = 'error';
+        loading.textContent = clientText(error.message) || clientText('loadError');
+      }
+    }
+
+    document.querySelector('#client-language-toggle').addEventListener('click', toggleClientLanguage);
+    document.querySelector('#client-theme-toggle').addEventListener('click', toggleClientTheme);
+    document.querySelector('#cards-grid-view').addEventListener('click', () => {
+      cards.classList.remove('list-view');
+      document.querySelector('#cards-grid-view').setAttribute('aria-pressed', 'true');
+      document.querySelector('#cards-list-view').setAttribute('aria-pressed', 'false');
+    });
+    document.querySelector('#cards-list-view').addEventListener('click', () => {
+      cards.classList.add('list-view');
+      document.querySelector('#cards-grid-view').setAttribute('aria-pressed', 'false');
+      document.querySelector('#cards-list-view').setAttribute('aria-pressed', 'true');
+    });
+    document.querySelector('#send-decisions').addEventListener('click', sendDecisions);
+    document.querySelector('#creator-details-close').addEventListener('click', () => document.querySelector('#creator-details-dialog').close());
+    document.querySelector('#creator-details-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) event.currentTarget.close();
+    });
+    document.querySelector('#work-video-close').addEventListener('click', closeWorkVideoDialog);
+    document.querySelector('#work-video-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) closeWorkVideoDialog();
+    });
+    document.querySelector('#work-video-dialog').addEventListener('close', () => {
+      if (selectedWorkVideoId) closeWorkVideoDialog();
+    });
+    applyClientPresentationSettings();
+    renderCardSkeletons();
+    loadCatalog();
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2D82C4">
+  <meta name="description" content="معرض المؤثرين المختارين من فكرتك الرقمية">
+  <title>معرض المؤثرين | فكرتك</title>
+  <link rel="stylesheet" href="/assets/showcase.css?v=2.0.1">
+  <link rel="stylesheet" href="/assets/fikratak-design.css?v=2.0.1">
+  <script src="/assets/i18n.js?v=2.0.0" defer></script>
+  <script src="/assets/ui.js?v=2.0.1" defer></script>
+  <script src="/assets/follower-tiers.js?v=2.0.1" defer></script>
+  <script src="/assets/icons.js?v=2.0.0" defer></script>
+  <script src="/assets/showcase.js?v=2.0.1" defer></script>
+</head>
+<body>
+  <header class="showcase-topbar">
+    <div class="showcase-brand">
+      <img src="/assets/fikratak-digital-logo.png" alt="فكرتك الرقمية">
+      <span class="brand-divider" aria-hidden="true"></span>
+      <div><strong>فكرتك الرقمية</strong><small data-i18n="clientExperience">تجربة العميل</small></div>
+    </div>
+    <div class="showcase-tools">
+      <span class="client-identity" id="client-identity" hidden></span>
+      <a class="fk-button fk-button-secondary preview-exit" id="preview-exit" href="/" hidden data-i18n="backToAgency">العودة للوكالة</a>
+      <button class="showcase-icon-button" id="language-toggle" type="button" aria-label="English">EN</button>
+      <button class="showcase-icon-button" id="theme-toggle" type="button" aria-label="الوضع الداكن"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#moon"></use></svg></button>
+      <button class="fk-button fk-button-secondary" id="logout-button" type="button" hidden data-i18n="logout">تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main class="showcase-main">
+    <section class="login-view" id="login-view" aria-labelledby="login-title">
+      <div class="login-copy">
+        <span class="showcase-kicker" data-i18n="curatedBy">اختيارات فريق فكرتك</span>
+        <h1 data-i18n="loginHeadline">مساحة خاصة، واختيارات صُنعت لعلامتكم.</h1>
+        <p data-i18n="loginDescription">اكتشفوا المؤثرين المختارين لحملتكم، واحفظوا الأسماء الأقرب لرؤيتكم.</p>
+        <div class="login-brand-note"><span class="brand-line"></span><span data-i18n="brandTagline">حلول تسويق بالمؤثرين، بتفاصيل تصنع الفرق.</span></div>
+      </div>
+      <form class="login-panel fk-surface" id="login-form">
+        <div class="login-mark" aria-hidden="true">F</div>
+        <span class="showcase-kicker" data-i18n="welcome">مرحبًا بكم</span>
+        <h2 id="login-title" data-i18n="signIn">تسجيل الدخول</h2>
+        <p class="muted-copy" data-i18n="loginHint">استخدموا البريد الإلكتروني وكلمة المرور المرسلين من فريق فكرتك.</p>
+        <label class="showcase-field"><span data-i18n="email">البريد الإلكتروني</span><input class="fk-input" name="email" type="email" autocomplete="username" required maxlength="254" dir="ltr"></label>
+        <label class="showcase-field"><span data-i18n="password">كلمة المرور</span><input class="fk-input" name="password" type="password" autocomplete="current-password" required maxlength="128"></label>
+        <button class="fk-button fk-button-primary login-submit" type="submit" data-i18n="signIn">تسجيل الدخول</button>
+        <p class="form-message" id="login-message" role="status" aria-live="polite"></p>
+        <p class="privacy-note" data-i18n="privacyNote">هذه المساحة خاصة بحسابكم والقوائم التي شاركها فريق فكرتك معكم.</p>
+      </form>
+    </section>
+
+    <section class="client-view" id="client-view" hidden>
+      <section class="showcase-hero" aria-labelledby="showcase-title">
+        <div class="hero-copy">
+          <span class="showcase-kicker" data-i18n="selectedFor">اختيارات مخصصة لكم</span>
+          <h1 id="showcase-title"></h1>
+          <p id="showcase-company"></p>
+        </div>
+        <div class="hero-stats" aria-label="ملخص القائمة">
+          <div class="hero-stat"><strong id="list-count">0</strong><span data-i18n="selectedProfiles">ملفًا مختارًا</span></div>
+          <div class="hero-stat"><strong id="visible-followers">0</strong><span data-i18n="pageFollowers">متابعو الصفحة</span></div>
+          <div class="hero-stat"><strong id="visible-cities">0</strong><span data-i18n="pageCities">مدن الصفحة</span></div>
+        </div>
+      </section>
+
+      <nav class="showcase-lists" id="showcase-lists" aria-label="القوائم المخصصة"></nav>
+
+      <section class="browse-section" aria-labelledby="browse-title">
+        <div class="browse-heading">
+          <div><span class="showcase-kicker" data-i18n="theShortlist">قائمة مختارة</span><h2 id="browse-title" data-i18n="meetCreators">تعرّفوا على المؤثرين</h2></div>
+          <div class="browse-actions">
+            <label class="showcase-sort"><span data-i18n="sort">ترتيب</span><select class="fk-input" id="sort-select"><option value="curated" data-i18n="curatedOrder">ترتيب فكرتك</option><option value="name" data-i18n="nameOrder">الاسم</option><option value="followers" data-i18n="followersOrder">المتابعون</option></select></label>
+            <div class="view-switch" role="group" aria-label="طريقة العرض">
+              <button id="grid-view-button" type="button" aria-pressed="true" aria-label="عرض شبكي" title="عرض شبكي"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#grid"></use></svg></button>
+              <button id="list-view-button" type="button" aria-pressed="false" aria-label="عرض قائمة" title="عرض قائمة"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#list"></use></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-meta"><span id="results-label" aria-live="polite"></span></div>
+        <div class="creator-grid" id="creator-grid" aria-live="polite" aria-busy="false"></div>
+        <div class="empty-state" id="empty-state" hidden><span class="empty-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="/assets/icons/sprite.svg#users"></use></svg></span><strong data-i18n="emptyTitle">لا يوجد مؤثرون في هذه القائمة</strong></div>
+        <nav class="pagination" id="pagination" aria-label="صفحات القائمة"></nav>
+      </section>
+      <footer class="showcase-footer"><span class="footer-mark">Fkretk</span><span data-i18n="footerNote">اختياراتكم، في مساحة خاصة من فكرتك الرقمية.</span></footer>
+    </section>
+  </main>
+
+  <dialog class="profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
+    <button class="dialog-close" id="close-profile" type="button" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    <div class="profile-dialog-head"><div class="profile-avatar profile-avatar-large" id="profile-avatar"></div><div><span class="showcase-kicker" data-i18n="creatorProfile">ملف المؤثر</span><h2 id="profile-title"></h2><p id="profile-username"></p></div></div>
+    <div class="profile-badges" id="profile-badges"></div>
+    <div class="profile-location" id="profile-location"></div>
+    <div class="profile-categories" id="profile-categories"></div>
+    <div class="profile-socials" id="profile-socials"></div>
+    <form class="feedback-form" id="feedback-form">
+      <label class="showcase-field"><span data-i18n="yourComment">ملاحظتكم للفريق</span><textarea class="fk-input" name="comment" rows="3" maxlength="600" data-i18n-placeholder="commentPlaceholder" placeholder="اكتبوا ملاحظة حول هذا الاختيار"></textarea></label>
+      <div class="feedback-actions"><button class="fk-button fk-button-secondary" type="button" id="profile-favorite"><span aria-hidden="true"><svg viewBox="0 0 24 24"><use href="/assets/icons/sprite.svg#heart"></use></svg></span><span data-i18n="addToShortlist">إضافة إلى قائمتي</span></button><button class="fk-button fk-button-primary" type="submit" data-i18n="sendFeedback">حفظ الملاحظة</button></div>
+      <p class="form-message" id="feedback-message" role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+  <div class="toast-message" id="toast-message" role="status" aria-live="polite"></div>
+  <script src="/assets/password-visibility.js?v=2.0.0"></script>
+</body>
+</html>

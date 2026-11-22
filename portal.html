@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#627269">
+  <title>بوابة العميل</title>
+  <link rel="stylesheet" href="/assets/portal.css?v=polish2-final">
+  <link rel="stylesheet" href="/assets/fikratak-design.css?v=2.0.1">
+</head>
+<body>
+  <header class="hero">
+    <div class="brand"><img id="portal-brand-logo" alt="" hidden><div class="brand-copy"><strong id="portal-brand-name">بوابة العميل</strong><span id="portal-brand-tagline">عرض خاص</span></div></div>
+    <h1 id="welcome">بوابة حملاتكم</h1>
+    <p>تابع تفاصيل الزيارة أو التوصيل واتخذ قرارك بشأن المؤثرين في حملاتك.</p>
+  </header>
+  <main>
+    <section id="login-panel" class="panel login">
+      <h2>تسجيل دخول العميل</h2><p class="muted">استخدم بيانات الحساب التي زودكم بها مسؤول الحساب.</p>
+      <form id="login-form" class="form">
+        <label class="field">البريد الإلكتروني<input name="email" type="text" inputmode="email" dir="ltr" autocomplete="username" required maxlength="254" aria-describedby="login-identifier-note"><small id="login-identifier-note">يمكن للحسابات القديمة استخدام اسم المستخدم حتى تحديث بياناتها.</small></label>
+        <label class="field">كلمة المرور<input name="password" type="password" autocomplete="current-password" required maxlength="128"></label>
+        <button class="button primary" type="submit">دخول آمن</button>
+      </form><p id="login-message" class="message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="portal-panel" class="panel portal-panel hidden">
+      <div class="toolbar portal-toolbar"><div><h2 id="client-heading">حملات العميل</h2><p id="client-company" class="muted"></p></div><button id="logout" class="button secondary" type="button">تسجيل الخروج</button></div>
+      <p id="portal-message" class="message" role="status" aria-live="polite"></p>
+      <section id="published-visits" class="visits-panel hidden" aria-labelledby="published-visits-title"><h2 id="published-visits-title">جدول زيارات المؤثرين</h2><p class="muted">تقدر تتابع هنا أسماء المؤثرين ومواعيد زياراتهم والفروع المحددة لكل زيارة.</p><div id="published-visits-content"></div></section>
+      <section id="today-visits" class="campaign-list"></section>
+      <section id="existing-influencers" class="campaign-list hidden" aria-labelledby="existing-influencers-heading"><h2 id="existing-influencers-heading">المؤثرون المخصصون لكم</h2><div id="existing-influencer-list" class="offer-cards"></div></section>
+      <section id="offers-dashboard" class="offers-dashboard hidden" aria-labelledby="offers-heading">
+        <div class="offers-heading"><div><h2 id="offers-heading">العروض المخصصة للمؤثرين</h2><p>راجعوا المرشحين واتخذوا القرار المناسب لكل مؤثر.</p></div><div class="offers-heading-actions"><div class="offer-view-switch" role="group" aria-label="طريقة عرض العروض"><button id="offer-grid-view" type="button" aria-pressed="true" aria-label="عرض شبكي"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#grid"></use></svg></button><button id="offer-list-view" type="button" aria-pressed="false" aria-label="عرض قائمة"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#list"></use></svg></button></div><button class="button primary" id="send-offer-decisions" type="button" title="تُحفظ القرارات فور اختيارها؛ ينقلك هذا الزر إلى أول قرار معلّق.">إرسال القرارات</button></div></div>
+        <div class="offer-stats" id="offer-stats" aria-label="إحصائيات العروض"></div>
+        <div class="offer-decision-summary"><span><strong id="offer-accepted-count">0</strong> مقبول</span><span><strong id="offer-rejected-count">0</strong> مرفوض</span><span><strong id="offer-pending-count">0</strong> قيد المراجعة</span><div class="offer-progress"><i id="offer-progress-bar"></i></div></div>
+        <p id="offer-result-count" class="offer-count-label" aria-live="polite"></p>
+        <div id="offer-list" class="offer-sections" aria-live="polite" aria-busy="false"></div>
+      </section>
+      <div id="campaign-list" class="campaign-list"></div>
+    </section>
+  </main>
+  <dialog id="decision-dialog" class="decision-dialog" aria-labelledby="decision-dialog-title">
+    <div class="decision-dialog-content">
+      <h2 id="decision-dialog-title">تأكيد القرار</h2>
+      <p id="decision-dialog-copy"></p>
+      <p id="decision-dialog-message" class="message" role="alert" aria-live="assertive"></p>
+      <div class="decision-dialog-actions">
+        <button class="button secondary" id="decision-cancel" type="button">إلغاء</button>
+        <button class="button primary" id="decision-confirm" type="button">تأكيد</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="offer-details-dialog" class="offer-details-dialog" aria-label="تفاصيل المؤثر">
+    <button id="offer-details-close" type="button" class="offer-details-close" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    <div id="offer-details-content"></div>
+  </dialog>
+  <div id="portal-decision-toast" class="portal-decision-toast" role="status" aria-live="polite"></div>
+  <footer>بوابة العميل</footer>
+  <script src="/assets/i18n.js?v=2.0.0"></script>
+  <script src="/assets/ui.js?v=2.0.1"></script>
+  <script src="/assets/follower-tiers.js?v=2.0.1"></script>
+  <script src="/assets/icons.js?v=2.0.0"></script>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[character]);
+    async function api(path, options = {}) {
+      const response = await fetch(path, { credentials:'same-origin', cache:'no-store', ...options,
+        headers:{ ...(options.body ? { 'Content-Type':'application/json' } : {}), ...options.headers } });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'تعذر إكمال الطلب.');
+      return result;
+    }
+    function labelDecision(value) { return value === 'accepted' ? 'موافق عليه' : value === 'rejected' ? 'مرفوض' : 'قيد المراجعة'; }
+    function formatPortalFollowers(value) {
+      const count=window.FikratakFollowerTiers?.parse(value);
+      return count===null||count===undefined?String(value):new Intl.NumberFormat('ar',{notation:'compact',maximumFractionDigits:1}).format(count);
+    }
+    function labelShipping(value) { return ({ not_shipped:'بانتظار التجهيز',pending_preparation:'بانتظار التجهيز',in_progress:'تم الشحن',ready:'جاهزة للشحن',shipped:'تم الشحن',delivered:'تم التسليم',failed:'تعذر التسليم' })[value] || value || '—'; }
+    function labelVisit(value) { return ({pending_confirmation:'بانتظار التأكيد',confirmed:'مؤكدة',completed:'تمت',cancelled:'ملغاة'})[value]||value||'—'; }
+    function labelCoverage(value) { return ({ pending:'بانتظار التغطية', completed:'اكتملت التغطية', not_completed:'لم تكتمل التغطية' })[value] || value || '—'; }
+    function detailLine(label, value) {
+      if (!value) return '';
+      return `<div>${escapeHTML(label)}: <strong>${escapeHTML(value)}</strong></div>`;
+    }
+    function fieldValue(target,field) {
+      if(field==='name')return target.profile?.name||target.name||'';
+      if(field==='username')return target.profile?.username||target.username?`@${String(target.profile?.username||target.username).replace(/^@/,'')}`:'';
+      if(field==='platform')return target.profile?.platform||target.platform||'';
+      if(field==='accountLink')return target.profile?.accountLink||target.accountLink||'';
+      if(field==='followers')return target.profile?.followers||target.followers||'';
+      if(field==='price')return target.profile?.price||target.price||'';
+      if(field==='campaignNotes')return target.profile?.campaignNotes||target.campaignNotes||'';
+      if(field==='visitStatus')return labelVisit(target.visitStatus);
+      if(field==='shippingStatus')return labelShipping(target.shippingStatus);
+      if(field==='coverageStatus')return labelCoverage(target.coverageStatus);
+      if(field==='deliveryMapLink')return target.deliveryMapLink||'';
+      return target[field]||'';
+    }
+    const fieldLabels={name:'المؤثر',username:'اسم المستخدم',platform:'المنصة',accountLink:'الحساب',followers:'المتابعون',price:'السعر',campaignNotes:'ملاحظات',visitDate:'تاريخ الزيارة',visitTime:'الموعد',visitCity:'المدينة',visitBranch:'الفرع',visitAddress:'العنوان',visitStatus:'حالة الزيارة',visitNotes:'ملاحظات الزيارة',coverageStatus:'حالة التغطية',coverageNotes:'ملاحظات التغطية',recipientName:'المستلم',recipientPhone:'جوال المستلم',courierContact:'تواصل المندوب',deliveryCity:'المدينة',deliveryDistrict:'الحي',deliveryAddress:'العنوان',deliveryMapLink:'الموقع',orderDetails:'تفاصيل الطلب',deliveryNotes:'ملاحظات الشحن',shippingStatus:'حالة الشحنة',shippingCarrier:'شركة الشحن',trackingNumber:'رقم التتبع',deliveryDate:'تاريخ التوصيل'};
+    let currentData=null;
+    let offerCardsView='grid';
+    const offerDecisionInFlight=new Set();
+    let pendingDecisionAction=null;
+    function applyPortalBrand(brand) {
+      if (!brand) return;
+      document.body.dataset.brand = brand.id || 'neutral';
+      const primary = /^#[0-9a-f]{6}$/i.test(brand.primaryColor || '') ? brand.primaryColor : '#627269';
+      const accent = /^#[0-9a-f]{6}$/i.test(brand.accentColor || '') ? brand.accentColor : primary;
+      document.body.style.setProperty('--blue', primary);
+      document.body.style.setProperty('--blue-dark', primary);
+      document.body.style.setProperty('--blue-pale', '#edf4ef');
+      document.body.style.setProperty('--orange', accent);
+      document.querySelector('meta[name="theme-color"]').content = primary;
+      const logo = $('#portal-brand-logo');
+      const logoPath = brand.logoMode === 'image' ? String(brand.logoPath || '') : '';
+      logo.hidden = !logoPath;
+      if (logoPath) {
+        logo.src = logoPath;
+        logo.alt = brand.nameAr || '';
+      } else {
+        logo.removeAttribute('src');
+        logo.alt = '';
+      }
+      $('#portal-brand-name').textContent = brand.nameAr || 'بوابة العميل';
+      $('#portal-brand-tagline').textContent = 'بوابة العميل';
+      document.querySelector('footer').textContent = brand.id === 'ryfaq'
+        ? 'رفاق | Ryfaq · بوابة العميل'
+        : brand.id === 'fkretk' ? 'فكرتك الرقمية · إدارة المؤثرين' : 'بوابة العميل';
+      document.title = `${brand.nameAr || 'بوابة العميل'} · بوابة العميل`;
+    }
+
+    function renderOffers(data) {
+      const host=$('#offer-list');
+      const dashboard=$('#offers-dashboard');
+      const existingSection=$('#existing-influencers');
+      const existingHost=$('#existing-influencer-list');
+      host.replaceChildren();
+      existingHost.replaceChildren();
+      const displayMode=data.client.displayMode;
+      if(displayMode==='existing'){
+        dashboard.classList.add('hidden');
+        const influencers=data.clientInfluencers||[];
+        existingSection.classList.toggle('hidden',influencers.length===0);
+        for(const influencer of influencers){
+          const card=document.createElement('article');card.className='offer-card';
+          const links=(influencer.profiles||[]).map(profile=>`<a class="offer-social-link" href="${escapeHTML(profile.profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(profile.platform)} · @${escapeHTML(profile.username)}</a>`).join('');
+          card.innerHTML=`<div class="offer-card-head"><h4>${escapeHTML(influencer.name||'مؤثر')}</h4></div><div class="offer-social-links">${links||'لا يوجد رابط حساب اجتماعي مسجل.'}</div>`;
+          existingHost.append(card);
+        }
+        return;
+      }
+      existingSection.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+      const selecting=displayMode==='selecting';
+      const offers=data.offers||[];
+      const allItems=offers.flatMap(offer=>(offer.influencers||[]).map(influencer=>({offer,influencer})));
+      host.classList.toggle('list-view',offerCardsView==='list');
+      const counts={total:allItems.length,pending:0,accepted:0,rejected:0};
+      for(const {influencer} of allItems)counts[influencer.decision||'pending']=(counts[influencer.decision||'pending']||0)+1;
+      const statsHost=$('#offer-stats');
+      statsHost.replaceChildren();
+      const stats=[
+        ['total','إجمالي الترشيحات','users'],
+        ['pending','قيد المراجعة','eye'],
+        ['accepted','تمت الموافقة','badge-check'],
+        ['rejected','تم الرفض','close']
+      ];
+      for(const [filter,label,iconName] of stats){
+        const stat=document.createElement('div');
+        stat.className='offer-stat';
+        stat.innerHTML=`<span class="offer-stat-mark" aria-hidden="true">${FKIcons.icon(iconName)}</span><span class="offer-stat-copy"><strong>${new Intl.NumberFormat('ar').format(counts[filter])}</strong><span>${label}</span></span>`;
+        statsHost.append(stat);
+      }
+      $('#offer-accepted-count').textContent=new Intl.NumberFormat('ar').format(counts.accepted);
+      $('#offer-rejected-count').textContent=new Intl.NumberFormat('ar').format(counts.rejected);
+      $('#offer-pending-count').textContent=new Intl.NumberFormat('ar').format(counts.pending);
+      $('#offer-progress-bar').style.width=`${counts.total?(counts.accepted+counts.rejected)/counts.total*100:0}%`;
+      const visibleCount=allItems.length;
+      $('#offer-result-count').textContent=`عرض ${new Intl.NumberFormat('ar').format(visibleCount)} من ${new Intl.NumberFormat('ar').format(allItems.length)} معلن`;
+      if(!allItems.length){
+        host.innerHTML='<div class="offer-empty">لا توجد عروض أو ترشيحات متاحة حاليًا.</div>';
+        return;
+      }
+      for(const offer of offers){
+        const influencers=offer.influencers||[];
+        if(!influencers.length)continue;
+        const section=document.createElement('article');section.className='offer-section';
+        section.innerHTML=`<div class="offer-section-head"><div><h3>${escapeHTML(offer.offerName||offer.companyName||'عرض مخصص')}</h3><p>${escapeHTML(offer.companyName||'')}</p></div><span class="kind">${new Intl.NumberFormat('ar').format(influencers.length)} معلن</span></div>`;
+        const cards=document.createElement('div');cards.className='offer-cards';
+        for(const influencer of influencers){
+          const decision=influencer.decision||'pending';
+          const busy=offerDecisionInFlight.has(`${offer.id}:${influencer.influencerId}`);
+          const badgeClass=decision==='accepted'?'accepted':decision==='rejected'?'rejected':'pending';
+          const badgeIcon=FKIcons.icon(decision==='accepted'?'badge-check':decision==='rejected'?'close':'eye',{size:16});
+          const detailValues=[['المنصة',influencer.platform],['المتابعون',influencer.followers]];
+          const socialLinks=(influencer.profiles||[]).map(profile=>{
+            const iconExtension=profile.platform==='Snapchat'?'png':'jpg';
+            const icon=`/assets/platform-${String(profile.platform||'').toLowerCase()}.${iconExtension}`;
+            return `<a class="offer-social-link" href="${escapeHTML(profile.profileUrl)}" target="_blank" rel="noopener noreferrer"><img src="${icon}" alt="" loading="lazy">${escapeHTML(profile.platform)} · @${escapeHTML(profile.username)}</a>`;
+          }).join('');
+          const mainUsername=influencer.mainUsername?`<p class="offer-main-username">@${escapeHTML(String(influencer.mainUsername).replace(/^@/,''))}</p>`:'';
+          const tier=window.FikratakFollowerTiers?.classify(influencer.followers);
+          const detailMarkup=detailValues.map(([label,value])=>detailLine(label,label==='المتابعون'&&value?formatPortalFollowers(value):value)).join('')
+            +(tier?`<span class="offer-tier tier-${tier.toLowerCase().replace(/\s/g,'-')}">${tier}</span>`:'')
+            +(influencer.accountLink?`<div>الحساب: <strong><a href="${escapeHTML(influencer.accountLink)}" target="_blank" rel="noopener noreferrer">فتح الحساب</a></strong></div>`:'');
+          const canDecide=Boolean(selecting&&offer.decisionsEnabled&&data.portal.actions.allowDecisions);
+          const controls=canDecide
+            ? `<div class="offer-actions">${decision==='pending'
+                ? `<button class="button approve" ${busy?'disabled':''} data-offer-decision="accepted" type="button">${FKIcons.icon('badge-check')}قبول العرض</button><button class="button reject" ${busy?'disabled':''} data-offer-decision="rejected" type="button">رفض العرض</button>`
+                : data.portal.actions.allowRevert
+                  ? `<button class="button revert" data-offer-decision="reverted" type="button" ${busy?'disabled':''}>تغيير القرار</button>`
+                  : `<span class="decision-label">${decision==='accepted'?'تمت الموافقة':'تم الرفض'}</span>`}</div>`
+            : '';
+          const history=(influencer.history||[]).slice(-3).reverse().map(entry=>{
+            const action=entry.eventType==='reverted'?'تم التراجع عن القرار':`تم اختيار «${labelDecision(entry.decision)}»`;
+            const date=entry.createdAt?new Date(entry.createdAt).toLocaleString('ar'):'';
+            return `<span>${escapeHTML(date)}${date?' · ':''}${escapeHTML(entry.actor||'العميل')} · ${action}</span>`;
+          }).join('');
+          const card=document.createElement('article');
+          card.className='offer-card';
+          card.dataset.offerId=offer.id;
+          card.dataset.influencerId=influencer.influencerId;
+          card.setAttribute('aria-busy',String(busy));
+          const avatar=document.createElement('div');avatar.className='offer-avatar';
+          const avatarImage=document.createElement('img');avatarImage.alt='';avatarImage.loading='lazy';avatarImage.decoding='async';
+          const avatarFallback='/assets/avatars/neutral.svg';
+          avatarImage.src=/^[a-f0-9]{32}$/i.test(influencer.influencerId||'')?`/profile-images/${influencer.influencerId}`:avatarFallback;
+          avatarImage.addEventListener('error',()=>{if(avatarImage.getAttribute('src')!==avatarFallback)avatarImage.src=avatarFallback;},{once:true});
+          avatar.append(avatarImage);
+          card.innerHTML=`<div class="offer-card-head"><div><h4>${escapeHTML(influencer.name||'مؤثر')}</h4>${mainUsername}</div><span class="decision ${badgeClass}"><span aria-hidden="true">${badgeIcon}</span>${labelDecision(decision)}</span></div><div class="offer-card-details">${detailMarkup}</div><div class="offer-social-links">${socialLinks||'<span class="muted">لا توجد حسابات اجتماعية مسجلة.</span>'}</div>${history?`<div class="offer-history" aria-label="سجل القرارات">${history}</div>`:''}${controls}`;
+          card.prepend(avatar);
+          card.tabIndex=0;
+          card.addEventListener('click',event=>{
+            if(event.target.closest('a,button'))return;
+            openOfferDetails(card);
+          });
+          card.addEventListener('keydown',event=>{
+            if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openOfferDetails(card);}
+          });
+          cards.append(card);
+        }
+        section.append(cards);host.append(section);
+      }
+    }
+    function render(data) {
+      currentData=data;
+      applyPortalBrand(data.brand);
+      const displayMode=data.client.displayMode||(data.client.clientType==='prospective'?'prospective':'selecting');
+      $('#login-panel').classList.add('hidden');
+      $('#portal-panel').classList.remove('hidden');
+      $('#logout').classList.toggle('hidden',Boolean(data.preview));
+      if(data.preview){$('#welcome').textContent='معاينة بوابة العميل';$('#portal-message').textContent='هذه معاينة خاصة بالإدارة ولا تعني نشر الصفحة.';}
+      $('#welcome').textContent = `مرحبًا ${data.client.clientName || data.client.companyName}`;
+      $('#client-heading').textContent = displayMode==='selecting'?'العروض المخصصة للمؤثرين':displayMode==='existing'?'بوابة العميل':'المؤثرون المقترحون';
+      $('#client-company').textContent = data.client.clientName || '';
+      document.querySelector('.hero p').textContent=displayMode==='prospective'
+        ?'استعرضوا المؤثرين المخصصين لكم وروابط حساباتهم.'
+        :displayMode==='selecting'
+          ?'راجعوا قائمة المؤثرين المخصصة لكم وسجلوا قراراتكم.'
+          :'استعرضوا المؤثرين المخصصين لكم وجدول الزيارات المنشور عند توفره.';
+      renderOffers(data);
+      const visitPanel=$('#published-visits');
+      const showVisits=displayMode==='existing'&&Boolean(data.visits);
+      visitPanel.classList.toggle('hidden',!showVisits);
+      const visitHost=$('#published-visits-content');visitHost.replaceChildren();
+      if(showVisits){
+        const visitNow=new Date();const visitToday=`${visitNow.getFullYear()}-${String(visitNow.getMonth()+1).padStart(2,'0')}-${String(visitNow.getDate()).padStart(2,'0')}`;
+        const visits=(data.visits.visits||[]).filter(visit=>visit.visitDate>=visitToday);
+        if(!visits.length){
+          const empty=document.createElement('p');empty.className='empty';
+          empty.textContent='لا توجد زيارات منشورة قادمة حاليًا.';
+          visitHost.append(empty);
+        }else{
+          const tableWrap=document.createElement('div');tableWrap.className='table-wrap';
+          tableWrap.innerHTML=`<table><thead><tr><th>المؤثر</th><th>الحسابات الاجتماعية</th><th>تاريخ الزيارة</th><th>الوقت</th><th>المدينة</th><th>الفرع</th></tr></thead><tbody>${visits.map(visit=>`<tr>
+            <td>${escapeHTML(visit.name||'—')}</td>
+            <td>${(visit.profiles||[]).map(profile=>`<div><a href="${escapeHTML(profile.profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(profile.platform)} · @${escapeHTML(profile.username)}</a></div>`).join('')||'—'}</td>
+            <td>${escapeHTML(visit.visitDate)}</td><td>${escapeHTML(visit.visitTime)}</td>
+            <td>${escapeHTML(visit.city||'—')}</td><td>${escapeHTML(visit.branch||'—')}</td></tr>`).join('')}</tbody></table>`;
+          const cards=document.createElement('div');cards.className='visit-cards';
+          cards.innerHTML=visits.map(visit=>`<article class="visit-card"><h3>${escapeHTML(visit.name||'مؤثر')}</h3>
+            <div class="social-links">${(visit.profiles||[]).map(profile=>`<a href="${escapeHTML(profile.profileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHTML(profile.platform)} · @${escapeHTML(profile.username)}</a>`).join('')}</div>
+            <p><strong>التاريخ:</strong> ${escapeHTML(visit.visitDate)} · <strong>الوقت:</strong> ${escapeHTML(visit.visitTime)}</p>
+            <p><strong>المدينة:</strong> ${escapeHTML(visit.city||'—')} · <strong>الفرع:</strong> ${escapeHTML(visit.branch||'—')}</p></article>`).join('');
+          visitHost.append(tableWrap,cards);
+        }
+      }
+      const localDate=new Date();const today=`${localDate.getFullYear()}-${String(localDate.getMonth()+1).padStart(2,'0')}-${String(localDate.getDate()).padStart(2,'0')}`;
+      const todayRows=(data.campaigns||[]).flatMap(campaign=>{
+        if(!campaign.sections.includes('visitSchedule')||!(data.portal.fields.visitSchedule||[]).includes('visitDate'))return [];
+        return campaign.targets.filter(target=>target.executionType==='visit'&&target.visitDate===today)
+          .map(target=>({campaign,target,fields:data.portal.fields.visitSchedule}));
+      });
+      const todayHost=$('#today-visits');todayHost.replaceChildren();
+      if(todayRows.length){
+        const block=document.createElement('article');block.className='campaign';
+        block.innerHTML='<div class="campaign-head"><div><h2>زيارات اليوم</h2><p>الزيارات المرتبطة بحسابكم فقط</p></div></div>';
+        const cards=document.createElement('div');cards.className='target-list';
+        for(const {campaign,target,fields} of todayRows){
+          const card=document.createElement('article');card.className='target';
+          const visible=fields.filter(field=>['name','username','visitDate','visitTime','visitCity','visitBranch','visitStatus'].includes(field));
+          card.innerHTML=`<h3>${escapeHTML(campaign.campaignName)}</h3><div class="details">${visible.map(field=>detailLine(fieldLabels[field]||field,fieldValue(target,field))).join('')}</div>`;
+          cards.append(card);
+        }
+        block.append(cards);todayHost.append(block);
+      }
+      const host = $('#campaign-list'); host.replaceChildren();
+      if (!data.campaigns.length) host.innerHTML = '<div class="empty">لا توجد حملات تنفيذية مرتبطة بهذا الحساب حتى الآن.</div>';
+      for (const campaign of data.campaigns) {
+        const section = document.createElement('article'); section.className = 'campaign';
+        const campaignName = escapeHTML(campaign.campaignName);
+        const type = campaign.campaignType === 'mix' ? 'حملة ميكس' : campaign.campaignType === 'visit' ? 'حملة زيارة' : 'حملة توصيل';
+        section.innerHTML = `<div class="campaign-head"><div><h2>${campaignName}</h2><p>${escapeHTML(campaign.companyName)} · ${escapeHTML(campaign.startDate)} – ${escapeHTML(campaign.endDate)}</p></div><span class="kind">${type}</span></div>`;
+        const targetList = document.createElement('div'); targetList.className = 'target-list';
+        if(campaign.sections.includes('requestApproval')){
+          for (const target of campaign.targets) {
+            const card=document.createElement('article');card.className='target';card.dataset.influencerId=target.influencerId;
+            const badgeClass=target.decision==='accepted'?'accepted':target.decision==='rejected'?'rejected':'';
+            const visibleFields=data.portal.fields.requestApproval||[];
+            const visibleName=visibleFields.includes('name')?target.profile?.name||target.name||'':'';
+            const rawUsername=target.profile?.username||target.username;
+            const visibleUsername=visibleFields.includes('username')&&rawUsername?`@${String(rawUsername).replace(/^@/,'')}`:'';
+            const decisionBadge=visibleFields.includes('decision')?`<span class="decision ${badgeClass}">${labelDecision(target.decision)}</span>`:'';
+            const details=visibleFields.filter(field=>field!=='decision').map(field=>{
+              const value=fieldValue(target,field);if(!value)return '';
+              if(field==='accountLink')return detailLine(fieldLabels[field],`<a href="${escapeHTML(value)}" target="_blank" rel="noopener noreferrer">فتح الحساب</a>`);
+              return detailLine(fieldLabels[field],value);
+            }).join('');
+            const buttons=data.client.displayMode==='selecting'&&data.portal.actions.allowDecisions
+              ? target.decision==='pending'
+                ? `<button class="button primary" data-decision="accepted" type="button">أوافق</button><button class="button danger" data-decision="rejected" type="button">أرفض</button>`
+                : `<button class="button secondary" data-decision="reverted" type="button">التراجع عن القرار</button>`
+              : '';
+            card.innerHTML=`<div class="target-head"><div>${visibleName?`<h3>${escapeHTML(visibleName)}</h3>`:''}${visibleUsername?`<p class="username">${escapeHTML(visibleUsername)}</p>`:''}</div>${decisionBadge}</div><div class="details">${details}</div><div class="actions">${buttons}</div>`;
+            card.querySelectorAll('[data-decision]').forEach(button=>button.addEventListener('click',()=>requestCampaignDecision(campaign,target,button)));
+            targetList.append(card);
+          }
+          const heading=document.createElement('h3');heading.textContent='المؤثرون المقترحون';heading.dataset.portalSection='requestApproval';targetList.dataset.portalSection='requestApproval';section.append(heading,targetList);
+        }
+        if(campaign.sections.includes('visitSchedule')){
+          const rows=campaign.targets.filter(target=>target.executionType==='visit').map(target=>({target,campaign}));
+          rows.sort((a,b)=>String(a.target.visitDate||'').localeCompare(String(b.target.visitDate||''),'ar')||String(a.target.visitTime||'').localeCompare(String(b.target.visitTime||''),'ar'));
+          const columns=(data.portal.fields.visitSchedule||[]);
+          const table=document.createElement('div');table.className='table-wrap';
+          table.innerHTML=`<table><thead><tr>${columns.map(field=>`<th>${escapeHTML(fieldLabels[field]||field)}</th>`).join('')}</tr></thead><tbody>${rows.map(({target})=>`<tr>${columns.map(field=>`<td>${escapeHTML(fieldValue(target,field))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          const heading=document.createElement('h3');heading.textContent='جدول الزيارات';heading.dataset.portalSection='visitSchedule';table.dataset.portalSection='visitSchedule';section.append(heading,table);
+          const actions=document.createElement('div');actions.className='target-list';actions.dataset.portalSection='visitSchedule';
+          for(const target of rows.map(row=>row.target)){
+            const card=document.createElement('article');card.className='target';
+            const title=document.createElement('strong');title.textContent=target.profile?.name||target.name||target.profile?.username||'زيارة';card.append(title);
+            if(data.portal.actions.allowVisitConfirmation&&target.visitStatus==='pending_confirmation'){
+              const button=document.createElement('button');button.type='button';button.className='button primary';button.textContent='تأكيد الزيارة';button.dataset.clientAction='visit_confirmed';button.dataset.influencerId=target.influencerId;card.append(button);
+            }
+            if(data.portal.actions.allowVisitChangeRequest){
+              const button=document.createElement('button');button.type='button';button.className='button secondary';button.textContent='طلب تغيير الموعد';button.dataset.clientAction='visit_change_requested';button.dataset.influencerId=target.influencerId;card.append(button);
+            }
+            for(const entry of target.clientActions||[]){const note=document.createElement('div');note.className='history';note.textContent=`${entry.actionType==='visit_confirmed'?'تم تأكيد الزيارة':entry.actionType==='visit_change_requested'?'طلب تغيير الموعد':'متابعة الشحن'} · ${new Date(entry.createdAt).toLocaleString('ar')}${entry.details?` · ${entry.details}`:''}`;card.append(note);}
+            actions.append(card);
+          }
+          if(actions.childElementCount)section.append(actions);
+        }
+        if(campaign.sections.includes('deliveryCampaign')){
+          const columns=data.portal.fields.deliveryCampaign||[];
+          const table=document.createElement('div');table.className='table-wrap';
+          const deliveryRows=campaign.targets.filter(target=>target.executionType==='delivery');
+          table.innerHTML=`<table><thead><tr>${columns.map(field=>`<th>${escapeHTML(fieldLabels[field]||field)}</th>`).join('')}</tr></thead><tbody>${deliveryRows.map(target=>`<tr>${columns.map(field=>{const value=fieldValue(target,field);return `<td>${field==='deliveryMapLink'&&value?`<a href="${escapeHTML(value)}" target="_blank" rel="noopener noreferrer">فتح الموقع</a>`:escapeHTML(value)}</td>`}).join('')}</tr>`).join('')}</tbody></table>`;
+          const heading=document.createElement('h3');heading.textContent='تفاصيل التوصيل';heading.dataset.portalSection='deliveryCampaign';table.dataset.portalSection='deliveryCampaign';section.append(heading,table);
+          if(data.portal.actions.allowShippingFollowUp){
+            const actions=document.createElement('div');actions.className='target-list';actions.dataset.portalSection='deliveryCampaign';
+            for(const target of deliveryRows){
+              const card=document.createElement('article');card.className='target';
+              const title=document.createElement('strong');title.textContent=target.profile?.name||target.name||target.profile?.username||'شحنة';card.append(title);
+              const button=document.createElement('button');button.type='button';button.className='button secondary';button.textContent='متابعة الشحنة';button.dataset.clientAction='shipping_followup';button.dataset.influencerId=target.influencerId;card.append(button);
+              for(const entry of target.clientActions||[]){const note=document.createElement('div');note.className='history';note.textContent=`متابعة الشحنة · ${new Date(entry.createdAt).toLocaleString('ar')}${entry.details?` · ${entry.details}`:''}`;card.append(note);}
+              actions.append(card);
+            }
+            if(actions.childElementCount)section.append(actions);
+          }
+        }
+        if(campaign.sections.includes('campaignReport')){
+          const report=campaign.targets.find(target=>target.report)?.report||{};
+          const reportItems=[];
+          if(report.campaignSummary)reportItems.push(['ملخص الحملة',report.campaignSummary]);
+          if(report.targetCount!==undefined)reportItems.push(['عدد المؤثرين',report.targetCount]);
+          if(report.coverageSummary)reportItems.push(['التغطية المكتملة',report.coverageSummary.completed],['بانتظار التغطية',report.coverageSummary.pending],['لم تكتمل التغطية',report.coverageSummary.notCompleted]);
+          if(report.visitSummary)reportItems.push(['زيارات تمت',report.visitSummary.completed],['زيارات مؤكدة',report.visitSummary.confirmed],['بانتظار التأكيد',report.visitSummary.pending],['زيارات ملغاة',report.visitSummary.cancelled]);
+          if(report.deliverySummary)reportItems.push(['بانتظار التجهيز',report.deliverySummary.pendingPreparation],['جاهزة للشحن',report.deliverySummary.ready],['تم الشحن',report.deliverySummary.shipped],['تم التسليم',report.deliverySummary.delivered],['تعذر التسليم',report.deliverySummary.failed]);
+          const reportGrid=document.createElement('div');reportGrid.className='report-grid';reportGrid.innerHTML=reportItems.map(([label,value])=>`<div class="report-item"><strong>${escapeHTML(value)}</strong><span>${escapeHTML(label)}</span></div>`).join('');
+          const heading=document.createElement('h3');heading.textContent='تقرير الحملة';heading.dataset.portalSection='campaignReport';reportGrid.dataset.portalSection='campaignReport';section.append(heading,reportGrid);
+        }
+        const configuredOrder=campaign.sections;
+        const ordered=[...section.children].filter(element=>element.dataset.portalSection);
+        for(const element of ordered)element.remove();
+        for(const name of configuredOrder)for(const element of ordered.filter(item=>item.dataset.portalSection===name))section.append(element);
+        for(const target of campaign.targets){
+          const history = target.history.map((entry) => {
+            const action = entry.eventType === 'reverted' ? 'تراجع عن القرار' : `اختار «${labelDecision(entry.decision)}»`;
+            return `${escapeHTML(new Date(entry.createdAt).toLocaleString('ar'))} — ${escapeHTML(entry.actorUsername||'العميل')} — ${action}`;
+          }).join('<br>');
+          if(history){const historyElement=document.createElement('div');historyElement.className='history';historyElement.innerHTML=history;const card=host.querySelector(`[data-influencer-id="${target.influencerId}"]`);if(card)card.append(historyElement);}
+        }
+        if(section.childElementCount>1){host.append(section);}
+      }
+    }
+    function openOfferDetails(card){
+      const clone=card.cloneNode(true);
+      clone.classList.add('offer-details-card');
+      clone.removeAttribute('tabindex');
+      clone.querySelector('.offer-actions')?.remove();
+      $('#offer-details-content').replaceChildren(clone);
+      $('#offer-details-dialog').showModal();
+    }
+    async function submitDecision(campaign,target,button) {
+      const decision=button.dataset.decision;
+      const card=button.closest('.target');card.querySelectorAll('button[data-decision]').forEach(item=>item.disabled=true);
+      setPortalMessage('');
+      try{
+        await api(`/api/client-portal/campaigns/${encodeURIComponent(campaign.id)}/targets/${encodeURIComponent(target.influencerId)}/decision`,{method:'POST',body:JSON.stringify({decision})});
+        await loadPortal();
+        if(pendingDecisionAction?.kind==='campaign'){
+          pendingDecisionAction=null;
+          $('#decision-dialog').close();
+        }
+        setPortalMessage(decision==='accepted'?'تمت الموافقة على المؤثر.':decision==='rejected'?'تم رفض المؤثر.':'تم التراجع عن القرار بنجاح.','success');
+      }catch(error){
+        setPortalMessage(error.message,'error');
+        card.querySelectorAll('button[data-decision]').forEach(item=>item.disabled=false);
+        if(pendingDecisionAction?.kind==='campaign'){
+          $('#decision-dialog-message').textContent=error.message;
+          $('#decision-dialog-message').classList.add('error');
+          $('#decision-confirm').disabled=false;
+          $('#decision-cancel').disabled=false;
+        }
+      }
+    }
+    function setPortalMessage(message,type='') {
+      const element=$('#portal-message');
+      element.textContent=message;
+      element.classList.toggle('success',type==='success');
+      element.classList.toggle('error',type==='error');
+    }
+    function requestOfferDecision(offer,influencer,decision) {
+      if(!offer||!influencer||pendingDecisionAction||offerDecisionInFlight.has(`${offer.id}:${influencer.influencerId}`))return;
+      if(decision==='accepted'){void submitOfferDecision(offer,influencer,decision);return;}
+      pendingDecisionAction={kind:'offer',offer,influencer,decision};
+      $('#decision-dialog-title').textContent=decision==='reverted'?'التراجع عن القرار':'تأكيد رفض العرض';
+      $('#decision-dialog-copy').textContent=decision==='reverted'
+        ?`سيُعاد «${influencer.name||'المؤثر'}» إلى حالة بانتظار المراجعة. سيظل سجل القرار السابق محفوظًا.`
+        :`هل تريد تسجيل رفض العرض للمؤثر «${influencer.name||'المؤثر'}»؟ يمكنك تغيير القرار أو التراجع عنه لاحقًا.`;
+      $('#decision-dialog-message').textContent='';
+      $('#decision-dialog-message').classList.remove('error');
+      $('#decision-confirm').textContent=decision==='reverted'?'تأكيد التراجع':'تأكيد الرفض';
+      $('#decision-confirm').className=`button ${decision==='reverted'?'primary':'reject'}`;
+      $('#decision-confirm').disabled=false;
+      $('#decision-cancel').disabled=false;
+      $('#decision-dialog').showModal();
+    }
+    function requestCampaignDecision(campaign,target,button) {
+      if(button.dataset.decision!=='reverted'){
+        void submitDecision(campaign,target,button);
+        return;
+      }
+      if(pendingDecisionAction)return;
+      pendingDecisionAction={kind:'campaign',campaign,target,button};
+      $('#decision-dialog-title').textContent='التراجع عن القرار';
+      $('#decision-dialog-copy').textContent=`سيُعاد «${target.profile?.name||target.name||'المؤثر'}» إلى حالة بانتظار القرار. سيظل سجل القرار السابق محفوظًا.`;
+      $('#decision-dialog-message').textContent='';
+      $('#decision-dialog-message').classList.remove('error');
+      $('#decision-confirm').textContent='تأكيد التراجع';
+      $('#decision-confirm').className='button primary';
+      $('#decision-confirm').disabled=false;
+      $('#decision-cancel').disabled=false;
+      $('#decision-dialog').showModal();
+    }
+    async function submitOfferDecision(offer,influencer,decision) {
+      const key=`${offer.id}:${influencer.influencerId}`;
+      if(offerDecisionInFlight.has(key))return;
+      offerDecisionInFlight.add(key);
+      const card=$(`[data-offer-id="${offer.id}"][data-influencer-id="${influencer.influencerId}"]`);
+      if(card){
+        card.setAttribute('aria-busy','true');
+        card.querySelectorAll('[data-offer-decision]').forEach(item=>item.disabled=true);
+      }
+      setPortalMessage('');
+      try{
+        const result=await api(`/api/client-portal/offers/${encodeURIComponent(offer.id)}/targets/${encodeURIComponent(influencer.influencerId)}/decision`,{method:'POST',body:JSON.stringify({decision})});
+        const previous=influencer.decision||'pending';
+        influencer.decision=result.decision||decision;
+        influencer.decisionUpdatedAt=new Date().toISOString();
+        influencer.history=Array.isArray(influencer.history)?influencer.history:[];
+        influencer.history.push({
+          eventType:decision,
+          previousDecision:previous==='pending'?'':previous,
+          decision:decision==='reverted'?'':decision,
+          actor:'العميل',
+          createdAt:influencer.decisionUpdatedAt
+        });
+        offerDecisionInFlight.delete(key);
+        if(pendingDecisionAction?.kind==='offer'&&pendingDecisionAction.offer.id===offer.id&&pendingDecisionAction.influencer.influencerId===influencer.influencerId){
+          pendingDecisionAction=null;
+          $('#decision-dialog').close();
+        }
+        renderOffers(currentData);
+        setPortalMessage(decision==='accepted'?'تمت الموافقة على العرض بنجاح.':decision==='rejected'?'تم رفض العرض بنجاح.':'تم التراجع عن القرار بنجاح.','success');
+        const toast=$('#portal-decision-toast');
+        toast.textContent=decision==='accepted'?'تمت الموافقة على العرض بنجاح.':decision==='rejected'?'تم رفض العرض بنجاح.':'تم تغيير القرار.';
+        toast.classList.add('visible');
+        clearTimeout(window.portalDecisionToastTimer);
+        window.portalDecisionToastTimer=setTimeout(()=>toast.classList.remove('visible'),2600);
+      }catch(error){
+        offerDecisionInFlight.delete(key);
+        renderOffers(currentData);
+        setPortalMessage(error.message||'تعذر حفظ القرار. حاولوا مرة أخرى.','error');
+        if(pendingDecisionAction?.kind==='offer'){
+          $('#decision-dialog-message').textContent=error.message||'تعذر حفظ القرار. حاولوا مرة أخرى.';
+          $('#decision-dialog-message').classList.add('error');
+          $('#decision-confirm').disabled=false;
+          $('#decision-cancel').disabled=false;
+        }
+      }
+    }
+    async function submitCampaignAction(campaign,button) {
+      const action=button.dataset.clientAction;
+      const details=action==='visit_change_requested'?window.prompt('اكتب الموعد أو الملاحظة المطلوبة للتغيير:')||'': '';
+      if(action==='visit_change_requested'&&!details.trim())return;
+      button.disabled=true;
+      try{
+        await api(`/api/client-portal/campaigns/${encodeURIComponent(campaign.id)}/targets/${encodeURIComponent(button.dataset.influencerId)}/action`,{method:'POST',body:JSON.stringify({action,details})});
+        await loadPortal();$('#portal-message').textContent='تم تسجيل الإجراء.';
+      }catch(error){$('#portal-message').textContent=error.message;button.disabled=false;}
+    }
+    $('#campaign-list').addEventListener('click',event=>{
+      const button=event.target.closest('[data-client-action]');if(!button||!currentData)return;
+      const campaign=[...currentData.campaigns].find(item=>item.targets.some(target=>target.influencerId===button.dataset.influencerId));
+      if(campaign)void submitCampaignAction(campaign,button);
+    });
+    $('#offer-list').addEventListener('click',event=>{
+      const button=event.target.closest('[data-offer-decision]');
+      if(!button||!currentData)return;
+      const card=button.closest('[data-offer-id]');
+      const offer=currentData.offers.find(item=>item.id===card?.dataset.offerId);
+      const influencer=offer?.influencers.find(item=>item.influencerId===card?.dataset.influencerId);
+      requestOfferDecision(offer,influencer,button.dataset.offerDecision);
+    });
+    $('#decision-confirm').addEventListener('click',()=>{
+      if(!pendingDecisionAction)return;
+      $('#decision-confirm').disabled=true;
+      $('#decision-cancel').disabled=true;
+      if(pendingDecisionAction.kind==='offer'){
+        void submitOfferDecision(pendingDecisionAction.offer,pendingDecisionAction.influencer,pendingDecisionAction.decision);
+      }else{
+        void submitDecision(pendingDecisionAction.campaign,pendingDecisionAction.target,pendingDecisionAction.button);
+      }
+    });
+    $('#decision-cancel').addEventListener('click',()=>{
+      pendingDecisionAction=null;
+      $('#decision-dialog').close();
+    });
+    $('#decision-dialog').addEventListener('cancel',()=>{pendingDecisionAction=null;});
+    $('#offer-grid-view').addEventListener('click',()=>{
+      offerCardsView='grid';$('#offer-grid-view').setAttribute('aria-pressed','true');$('#offer-list-view').setAttribute('aria-pressed','false');
+      $('#offer-list').classList.remove('list-view');
+    });
+    $('#offer-list-view').addEventListener('click',()=>{
+      offerCardsView='list';$('#offer-grid-view').setAttribute('aria-pressed','false');$('#offer-list-view').setAttribute('aria-pressed','true');
+      $('#offer-list').classList.add('list-view');
+    });
+    $('#send-offer-decisions').addEventListener('click',()=>{
+      const next=$('#offer-list').querySelector('.offer-card .button.approve');
+      if(next){next.scrollIntoView({behavior:'smooth',block:'center'});next.focus({preventScroll:true});}
+      else $('#portal-message').textContent='تُحفظ القرارات تلقائيًا عند اختيارها؛ لا توجد قرارات معلّقة.';
+    });
+    $('#offer-details-close').addEventListener('click',()=>$('#offer-details-dialog').close());
+    $('#offer-details-dialog').addEventListener('click',event=>{if(event.target===event.currentTarget)event.currentTarget.close();});
+    async function loadPortal() {
+      const data=await api('/api/client-portal/campaigns');
+      if(data.client.displayMode==='existing'){
+        const result=await api('/api/client-portal/visits');data.visits=result.schedule;
+      }else data.visits=null;
+      render(data);
+    }
+    async function start() {
+      try {
+        const preview=new URLSearchParams(location.search).get('preview');
+        if(preview){const data=await api(`/api/client-accounts/${encodeURIComponent(preview)}/preview`);data.preview=true;render(data);return;}
+        const session = await api('/api/client-portal/session'); if (session.account) await loadPortal();
+      }
+      catch (error) { $('#login-message').textContent = error.message; }
+    }
+    $('#login-form').addEventListener('submit', async (event) => {
+      event.preventDefault(); const loginForm = event.currentTarget; const form = new FormData(loginForm);
+      $('#login-message').textContent = '';
+      try {
+        await api('/api/client-portal/login', { method:'POST', body:JSON.stringify({ email:form.get('email'), password:form.get('password') }) });
+        loginForm.reset(); await loadPortal();
+      } catch (error) { $('#login-message').textContent = error.message; }
+    });
+    $('#logout').addEventListener('click', async () => {
+      try { await api('/api/client-portal/logout', { method:'POST', body:'{}' }); }
+      finally {
+        $('#portal-panel').classList.add('hidden');
+        $('#login-panel').classList.remove('hidden');
+        $('#welcome').textContent='بوابة حملاتكم';
+        delete document.body.dataset.brand;
+        document.body.style.removeProperty('--blue');
+        document.body.style.removeProperty('--blue-dark');
+        document.body.style.removeProperty('--blue-pale');
+        document.body.style.removeProperty('--orange');
+        $('#portal-brand-name').textContent='بوابة العميل';
+        $('#portal-brand-logo').hidden=true;
+        $('footer').textContent='بوابة العميل';
+        document.title='بوابة العميل';
+        $('meta[name="theme-color"]').content='#627269';
+      }
+    });
+    start();
+  </script>
+  <script src="/assets/password-visibility.js?v=2.0.0"></script>
+</body>
+</html>

@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="theme-color" content="#627269">
+  <title>عرض الحملة</title>
+  <link rel="stylesheet" href="/assets/presentation.css?v=2.0.1">
+  <link rel="stylesheet" href="/assets/fikratak-design.css?v=2.0.1">
+</head>
+<body>
+  <header>
+  <div class="brand">
+    <div id="legacy-brand" class="legacy-brand"><span id="header-label">عرض الحملة</span><img id="brand-logo" alt="" hidden></div>
+    <div id="visits-branding" class="visits-branding" hidden>
+      <div class="brand-identity">
+        <img id="visits-brand-logo" alt="" hidden>
+        <span id="visits-brand-name"></span>
+      </div>
+      <span class="brand-cross" aria-hidden="true">×</span>
+      <div class="brand-identity">
+        <img id="client-brand-logo" alt="" hidden>
+        <span id="client-brand-name"></span>
+      </div>
+    </div>
+  </div>
+    <div class="header-tools">
+      <button id="theme-toggle" type="button" aria-label="Toggle color theme" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#moon"></use></svg></button>
+      <button id="language-toggle" type="button" aria-label="Switch language">English</button>
+    </div>
+  </header>
+  <main id="app"><div class="presentation-loading" role="status"><p>جارٍ تحميل العرض…</p><div class="presentation-loading-grid"><i></i><i></i><i></i></div></div></main>
+  <dialog id="video-preview-dialog" class="video-preview-dialog" aria-labelledby="video-preview-dialog-title">
+    <div class="video-preview-dialog-header">
+      <h2 id="video-preview-dialog-title"></h2>
+      <button id="video-preview-close" class="video-preview-close" type="button" aria-label="Close video player"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    </div>
+    <div id="video-preview-player" class="video-preview-player"></div>
+    <p id="video-preview-fallback" class="video-preview-fallback" hidden></p>
+    <a id="video-preview-link" class="video-preview-fallback" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+  </dialog>
+  <dialog id="creator-preview-dialog" class="creator-preview-dialog" aria-label="تفاصيل المؤثر">
+    <button id="creator-preview-close" class="creator-preview-close" type="button" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/icons/sprite.svg#close"></use></svg></button>
+    <div id="creator-preview-content"></div>
+  </dialog>
+  <footer id="footer-label">عرض الحملة</footer>
+  <script src="/assets/i18n.js?v=2.0.0"></script>
+  <script src="/assets/ui.js?v=2.0.1"></script>
+  <script src="/assets/follower-tiers.js?v=2.0.1"></script>
+  <script src="/assets/icons.js?v=2.0.0"></script>
+  <script>
+    'use strict';
+    const app = document.querySelector('#app');
+    const token = location.pathname.split('/').filter(Boolean).at(-1) || '';
+    let currentLanguage = 'ar';
+    const presentationThemeKey = 'ryfaq-campaign-presentation-theme';
+    let currentTheme = 'light';
+    try { currentTheme = localStorage.getItem(presentationThemeKey) === 'dark' ? 'dark' : 'light'; } catch {}
+    let presentationData = null;
+    let youtubeIframeApiPromise = null;
+    let activeWorkPlayer = null;
+    let activeWorkTrigger = null;
+    let videoRailResizeObserver = null;
+    const presentationFilters = { search: '', platform: '', city: '', view: 'grid' };
+    let selectedVisitDate = '';
+    const copy = {
+      ar: {
+        loading: 'جارٍ تحميل العرض…', unavailable: 'هذا العرض غير متاح.',
+        title: 'عرض الحملة', subtitle: 'مقترحات وتفاصيل التعاون', count: 'عدد المؤثرين',
+        type: 'نوع التعاون', influencer: 'المؤثرون المقترحون',
+        influencerDescription: 'الملفات والتفاصيل التي اختيرت خصيصًا لهذا العرض.',
+        noTargets: 'لا توجد مؤثرون متاحون في هذا العرض.',
+        nextTitle: 'الخطوة التالية', nextText: 'يرجى مراجعة الأسماء والتواريخ والفروع المقترحة، ثم تنسيق الاختيارات المناسبة مع فريق فكرتك.',
+        companyWork: 'بعض أعمال فكرتك الرقمية مع صُنّاع المحتوى والمؤثرين',
+        companyWorkDescription: 'من رؤيتك إلى جمهورك، نصنع حضورًا لعلامتك التجارية من خلال رسائل تسويقية تعكس هويتها، وتنقل كل تفصيلة تحب توصلها لعملائك.',
+        companyWorkDescriptionSecond: 'ونصنع لمنتجاتك تجربة يرويها صُنّاع المحتوى من واقع تجربتهم، ليقترب الجمهور منها ويتعرّف على قيمتها ومميزاتها.',
+        companyOrbit: 'نماذج تنفيذ مختارة',
+        chooseWorkVideo: 'تشغيل هذا النموذج', openOnYouTube: 'فتح على YouTube',
+        videoFallback: 'قد يكون الفيديو خاصًا أو لا يسمح بالتضمين. يمكنك فتحه مباشرة على YouTube.',
+        openVideo: 'فتح على YouTube', date: 'التاريخ', time: 'الوقت', city: 'المدينة',
+        branch: 'الفرع', address: 'العنوان', platform: 'المنصة', username: 'الحساب',
+        followers: 'المتابعون', price: 'التكلفة', serviceInfluencer: 'تعاون مع مؤثرين',
+        serviceUGC: 'إنتاج محتوى UGC', serviceMixed: 'تعاون مختلط',
+        visitsTitle: 'مواعيد الزيارات', visitsDescription: 'جدول الزيارات حسب اليوم والوقت.',
+        yesterday: 'أمس', today: 'اليوم', tomorrow: 'بكرة', noScheduledVisits: 'لا توجد زيارات مجدولة لهذا اليوم.',
+        timeLater: 'الوقت يُحدد لاحقًا', packageProgress: 'تمّت {completed} من {total} زيارات',
+        footer: 'فكرتك الرقمية · إدارة المؤثرين'
+      },
+      en: {
+        loading: 'Loading presentation…', unavailable: 'This presentation is unavailable.',
+        title: 'Campaign presentation', subtitle: 'Creator shortlist and collaboration details',
+        count: 'Creators', type: 'Collaboration', influencer: 'Proposed creators',
+        influencerDescription: 'Profiles and details selected specifically for this presentation.',
+        noTargets: 'There are no creators available in this presentation.',
+        nextTitle: 'Next step', nextText: 'Please review the proposed creators, dates, and branches, then coordinate your selections with the Fikratak team.',
+        companyWork: 'Selected work by Fikratak Digital with content creators and influencers',
+        companyWorkDescription: 'From your vision to your audience, we build your brand presence through marketing messages that reflect its identity and convey every detail you want to share with your customers.',
+        companyWorkDescriptionSecond: 'We create product experiences shared by content creators through their own perspective, bringing audiences closer to your products and their value.',
+        companyOrbit: 'Selected work examples',
+        chooseWorkVideo: 'Play this example', openOnYouTube: 'Open on YouTube',
+        videoFallback: 'This video may be private or may not allow embedding. You can open it directly on YouTube.',
+        openVideo: 'Open on YouTube', date: 'Date', time: 'Time', city: 'City',
+        branch: 'Branch', address: 'Address', platform: 'Platform', username: 'Account',
+        followers: 'Followers', price: 'Cost', serviceInfluencer: 'Influencer collaboration',
+        serviceUGC: 'UGC content production', serviceMixed: 'Mixed collaboration',
+        visitsTitle: 'Visit schedule', visitsDescription: 'Visits grouped by date and time.',
+        yesterday: 'Yesterday', today: 'Today', tomorrow: 'Tomorrow', noScheduledVisits: 'No visits are scheduled for this day.',
+        timeLater: 'Time to be confirmed', packageProgress: '{completed} of {total} visits completed',
+        footer: 'Fikratak Digital · Influencer Management'
+      }
+    };
+    const fieldLabels = {
+      visitDate: 'date', visitTime: 'time', visitCity: 'city', visitBranch: 'branch',
+      visitAddress: 'address', platform: 'platform', username: 'username',
+      followers: 'followers', price: 'price'
+    };
+    function translateServiceType(value) {
+      const service = String(value || '').toLocaleLowerCase();
+      if (service.includes('ugc')) return copy[currentLanguage].serviceUGC;
+      if (service.includes('mix') || service.includes('both')) return copy[currentLanguage].serviceMixed;
+      return copy[currentLanguage].serviceInfluencer;
+    }
+    function addChip(parent, label, value) {
+      if (value === undefined || value === null || String(value).trim() === '') return;
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = `${label}: ${value}`;
+      parent.append(chip);
+    }
+    function riyadhDateString(date = new Date()) {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(date).map((part) => [part.type, part.value]));
+      return `${parts.year}-${parts.month}-${parts.day}`;
+    }
+    function shiftDate(date, offset) {
+      const [year, month, day] = date.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day + offset)).toISOString().slice(0, 10);
+    }
+    function formattedVisitDate(date) {
+      return new Intl.DateTimeFormat(currentLanguage, {
+        timeZone: 'Asia/Riyadh', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }).format(new Date(`${date}T12:00:00Z`));
+    }
+    function renderVisitBranding(result, brand) {
+      const legacy = document.querySelector('#legacy-brand');
+      const branding = document.querySelector('#visits-branding');
+      const isVisitsMode = result.presentation?.mode === 'visits';
+      legacy.hidden = isVisitsMode;
+      branding.hidden = !isVisitsMode;
+      if (!isVisitsMode) return;
+      const brandLogo = document.querySelector('#visits-brand-logo');
+      const brandText = document.querySelector('#visits-brand-name');
+      const brandName = currentLanguage === 'en' ? brand?.nameEn : brand?.nameAr;
+      const brandLogoPath = brand?.logoMode === 'image' ? String(brand.logoPath || '') : '';
+      brandLogo.hidden = !brandLogoPath;
+      brandText.hidden = Boolean(brandLogoPath);
+      brandText.textContent = brandName || '';
+      if (brandLogoPath) {
+        brandLogo.src = brandLogoPath;
+        brandLogo.alt = currentLanguage === 'en' ? `${brandName} logo` : `شعار ${brandName}`;
+      } else {
+        brandLogo.removeAttribute('src');
+        brandLogo.alt = '';
+      }
+      const clientLogo = document.querySelector('#client-brand-logo');
+      const clientName = document.querySelector('#client-brand-name');
+      const displayName = result.campaign.clientName || result.campaign.clientCompany || result.campaign.company || '';
+      const logoUrl = String(result.presentation.clientLogoUrl || '');
+      clientLogo.hidden = !logoUrl;
+      clientName.hidden = Boolean(logoUrl);
+      clientName.textContent = displayName;
+      if (logoUrl) {
+        try {
+          const parsed = new URL(logoUrl, location.origin);
+          if (parsed.origin !== location.origin || !parsed.pathname.startsWith('/api/campaign-presentations/')) throw new Error('Invalid client logo URL.');
+          clientLogo.src = parsed.href;
+          clientLogo.alt = currentLanguage === 'en' ? `${displayName} logo` : `شعار ${displayName}`;
+        } catch {
+          clientLogo.hidden = true;
+          clientName.hidden = false;
+        }
+      } else {
+        clientLogo.removeAttribute('src');
+        clientLogo.alt = '';
+      }
+    }
+    function sanitizeRyfaqSurface() {
+      if (presentationData?.brand?.id !== 'ryfaq') return;
+      const foreignBrand = /FKRETK|Fikratak(?:\s+Digital)?|فكرتك(?:\s+الرقمية)?/gi;
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) node.textContent = node.textContent.replace(foreignBrand, '').trim();
+      for (const element of document.body.querySelectorAll('[aria-label], [title], [alt]')) {
+        for (const attribute of ['aria-label', 'title', 'alt']) {
+          if (element.hasAttribute(attribute)) element.setAttribute(attribute, element.getAttribute(attribute).replace(foreignBrand, '').trim());
+        }
+      }
+      document.title = document.title.replace(foreignBrand, '').trim();
+    }
+    function loadYouTubeIframeApi() {
+      if (window.YT?.Player) return Promise.resolve(window.YT);
+      if (youtubeIframeApiPromise) return youtubeIframeApiPromise;
+      youtubeIframeApiPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        window.onYouTubeIframeAPIReady = () => resolve(window.YT);
+        script.onerror = () => {
+          youtubeIframeApiPromise = null;
+          reject(new Error('YouTube player could not be loaded.'));
+        };
+        document.head.append(script);
+      });
+      return youtubeIframeApiPromise;
+    }
+    function showWorkVideoFallback(video, words, message) {
+      const notice = document.querySelector('#video-preview-fallback');
+      notice.textContent = message || words.videoFallback;
+      const link = document.querySelector('#video-preview-link');
+      link.href = `https://www.youtube.com/watch?v=${encodeURIComponent(video.videoId)}`;
+      link.textContent = words.openOnYouTube;
+      notice.hidden = false;
+      link.hidden = false;
+    }
+    function closeVideoPreview() {
+      const dialog = document.querySelector('#video-preview-dialog');
+      if (!dialog.open) {
+        stopVideoPreview();
+        return;
+      }
+      dialog.close();
+    }
+    function stopVideoPreview() {
+      const host = document.querySelector('#video-preview-player');
+      if (activeWorkPlayer) activeWorkPlayer.destroy();
+      activeWorkPlayer = null;
+      host.replaceChildren();
+      document.querySelector('#video-preview-fallback').hidden = true;
+      document.querySelector('#video-preview-link').hidden = true;
+      if (activeWorkTrigger?.isConnected) activeWorkTrigger.focus({ preventScroll: true });
+      activeWorkTrigger = null;
+    }
+    function openVideoPreview(video, trigger, words) {
+      const dialog = document.querySelector('#video-preview-dialog');
+      const host = document.querySelector('#video-preview-player');
+      if (activeWorkPlayer) activeWorkPlayer.destroy();
+      activeWorkPlayer = null;
+      activeWorkTrigger = trigger;
+      host.replaceChildren();
+      document.querySelector('#video-preview-dialog-title').textContent = video.title || words.companyOrbit;
+      document.querySelector('#video-preview-fallback').hidden = true;
+      document.querySelector('#video-preview-link').hidden = true;
+      if (!dialog.open) dialog.showModal();
+      document.querySelector('#video-preview-close').focus({ preventScroll: true });
+      loadYouTubeIframeApi().then((youtube) => {
+        if (!dialog.open || activeWorkTrigger !== trigger) return;
+        try {
+          activeWorkPlayer = new youtube.Player(host, {
+            host: 'https://www.youtube-nocookie.com',
+            videoId: video.videoId,
+            width: '100%',
+            height: '100%',
+            playerVars: { autoplay: 1, controls: 1, disablekb: 0, enablejsapi: 1, fs: 1, playsinline: 1, rel: 0, origin: location.origin },
+            events: {
+              onReady: (event) => {
+                if (!dialog.open || activeWorkTrigger !== trigger) return;
+                const frame = event.target.getIframe();
+                frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+                frame.allowFullscreen = true;
+                frame.referrerPolicy = 'strict-origin-when-cross-origin';
+                frame.title = video.title || words.companyWork;
+                event.target.playVideo();
+              },
+              onError: (event) => {
+                if (!dialog.open || activeWorkTrigger !== trigger) return;
+                const message = [101, 150].includes(event.data)
+                  ? (currentLanguage === 'ar' ? 'لا يسمح صاحب الفيديو بتشغيله داخل مواقع أخرى.' : 'The owner does not allow this video to be embedded.')
+                  : event.data === 100
+                    ? (currentLanguage === 'ar' ? 'الفيديو خاص أو محذوف أو غير متاح.' : 'This video is private, deleted, or unavailable.')
+                    : words.videoFallback;
+                if (activeWorkPlayer) activeWorkPlayer.destroy();
+                activeWorkPlayer = null;
+                host.replaceChildren();
+                showWorkVideoFallback(video, words, message);
+              }
+            }
+          });
+        } catch (error) {
+          console.error('YouTube player initialization failed:', error);
+          showWorkVideoFallback(video, words);
+        }
+      }).catch((error) => {
+        if (dialog.open && activeWorkTrigger === trigger) {
+          console.error('YouTube player API could not be loaded:', error);
+          showWorkVideoFallback(video, words);
+        }
+      });
+    }
+    function bindVideoRail(rail, controls) {
+      videoRailResizeObserver?.disconnect();
+      const updateControls = () => {
+        for (const button of controls.querySelectorAll('button')) {
+          button.disabled = rail.scrollWidth <= rail.clientWidth + 1;
+        }
+      };
+      controls.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-video-scroll]');
+        if (!button) return;
+        const direction = getComputedStyle(rail).direction === 'rtl' ? -1 : 1;
+        rail.scrollBy({
+          left: (button.dataset.videoScroll === 'next' ? 1 : -1) * direction * rail.clientWidth * .85,
+          behavior: 'smooth'
+        });
+      });
+      rail.addEventListener('scroll', updateControls, { passive: true });
+      rail.addEventListener('keydown', (event) => {
+        if (event.target !== rail || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        const direction = getComputedStyle(rail).direction === 'rtl' ? -1 : 1;
+        rail.scrollBy({ left: (event.key === 'ArrowRight' ? 1 : -1) * direction * rail.clientWidth * .85, behavior: 'smooth' });
+      });
+      videoRailResizeObserver = new ResizeObserver(updateControls);
+      videoRailResizeObserver.observe(rail);
+      let pointerStart = 0;
+      let scrollStart = 0;
+      let dragged = false;
+      rail.addEventListener('pointerdown', (event) => {
+        if (event.pointerType !== 'mouse' || event.button !== 0) return;
+        pointerStart = event.clientX;
+        scrollStart = rail.scrollLeft;
+        dragged = false;
+      });
+      rail.addEventListener('pointermove', (event) => {
+        if (event.pointerType !== 'mouse' || !(event.buttons & 1)) return;
+        const distance = event.clientX - pointerStart;
+        if (Math.abs(distance) < 5) return;
+        if (!dragged && rail.hasPointerCapture && !rail.hasPointerCapture(event.pointerId)) {
+          rail.setPointerCapture(event.pointerId);
+        }
+        dragged = true;
+        rail.classList.add('is-dragging');
+        rail.scrollLeft = scrollStart + distance * (getComputedStyle(rail).direction === 'rtl' ? 1 : -1);
+        event.preventDefault();
+      });
+      const endDrag = () => {
+        rail.classList.remove('is-dragging');
+        if (dragged) setTimeout(() => { dragged = false; }, 0);
+      };
+      rail.addEventListener('pointerup', endDrag);
+      rail.addEventListener('pointercancel', endDrag);
+      rail.addEventListener('click', (event) => {
+        if (!dragged) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dragged = false;
+      }, true);
+      updateControls();
+    }
+    function renderCompanyWorkGallery(videos) {
+      if (!Array.isArray(videos) || !videos.length) return null;
+      const words = copy[currentLanguage];
+      const section = document.createElement('section'); section.className = 'section work-showcase';
+      const heading = document.createElement('h2'); heading.className = 'section-heading'; heading.textContent = words.companyWork;
+      const description = document.createElement('p'); description.className = 'section-description'; description.textContent = words.companyWorkDescription;
+      const descriptionSecond = document.createElement('p'); descriptionSecond.className = 'section-description'; descriptionSecond.textContent = words.companyWorkDescriptionSecond;
+      const controls = document.createElement('div'); controls.className = 'video-rail-controls';
+      for (const [direction, label, icon] of [
+        ['previous', currentLanguage === 'ar' ? 'الفيديوهات السابقة' : 'Previous videos', FKIcons.icon(currentLanguage === 'ar' ? 'arrow-right' : 'arrow-left')],
+        ['next', currentLanguage === 'ar' ? 'الفيديوهات التالية' : 'Next videos', FKIcons.icon(currentLanguage === 'ar' ? 'arrow-left' : 'arrow-right')]
+      ]) {
+        const button = document.createElement('button'); button.type = 'button'; button.dataset.videoScroll = direction;
+        button.setAttribute('aria-label', label); button.innerHTML = icon; controls.append(button);
+      }
+      const track = document.createElement('div'); track.className = 'video-grid'; track.tabIndex = 0;
+      track.setAttribute('role', 'region'); track.setAttribute('aria-label', words.companyWork);
+      for (const video of videos) {
+        if (!/^[A-Za-z0-9_-]{11}$/.test(video.videoId || '')) continue;
+        const card = document.createElement('button'); card.type = 'button'; card.className = 'video-card';
+        const titleText = String(video.title || '').trim();
+        card.setAttribute('aria-label', titleText ? `${words.chooseWorkVideo}: ${titleText}` : words.chooseWorkVideo);
+        const preview = document.createElement('span'); preview.className = 'video-preview';
+        const image = document.createElement('img'); image.src = `https://i.ytimg.com/vi/${encodeURIComponent(video.videoId)}/hqdefault.jpg`;
+        image.alt = ''; image.loading = 'lazy'; image.decoding = 'async'; image.referrerPolicy = 'no-referrer';
+        image.draggable = false;
+        image.addEventListener('error', () => image.remove(), { once: true });
+        const play = document.createElement('span'); play.className = 'video-preview-play'; play.setAttribute('aria-hidden', 'true'); play.innerHTML = FKIcons.icon('play');
+        preview.append(image, play);
+        card.append(preview);
+        if (titleText) {
+          const label = document.createElement('span'); label.className = 'video-card-title'; label.textContent = titleText;
+          card.append(label);
+        }
+        card.addEventListener('click', () => openVideoPreview(video, card, words));
+        track.append(card);
+      }
+      section.append(heading, description, descriptionSecond, controls, track);
+      bindVideoRail(track, controls);
+      return section;
+    }
+    function render() {
+      const brand = presentationData?.brand;
+      const words = brand?.id === 'ryfaq'
+        ? {
+          ...copy[currentLanguage],
+          companyWork: currentLanguage === 'ar' ? 'نماذج مختارة' : 'Selected examples',
+          companyWorkDescription: currentLanguage === 'ar' ? 'نماذج مختارة من الأعمال الاحترافية.' : 'Selected examples of professional work.',
+          companyOrbit: currentLanguage === 'ar' ? 'نماذج تنفيذ مختارة' : 'Selected work examples',
+          nextTitle: currentLanguage === 'ar' ? 'الخطوة التالية' : 'Next step',
+          nextText: currentLanguage === 'ar'
+            ? 'يرجى مراجعة الأسماء والتواريخ والفروع المقترحة، ثم تنسيق الاختيارات المناسبة.'
+            : 'Review the proposed creators, dates, and branches, then coordinate your selections.',
+          footer: currentLanguage === 'ar' ? 'رفاق | Ryfaq' : 'Ryfaq'
+        }
+        : copy[currentLanguage];
+      document.documentElement.lang = currentLanguage;
+      document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+      const logo = document.querySelector('#brand-logo');
+      if (brand) {
+        document.body.dataset.brand = brand.id;
+        const themeToggle = document.querySelector('#theme-toggle');
+        themeToggle.hidden = brand.id !== 'ryfaq';
+        if (brand.id === 'ryfaq') {
+          document.body.dataset.theme = currentTheme;
+          themeToggle.innerHTML = FKIcons.icon(currentTheme === 'dark' ? 'sun' : 'moon');
+          themeToggle.setAttribute('aria-label', currentTheme === 'dark'
+            ? (currentLanguage === 'ar' ? 'الوضع الفاتح' : 'Light mode')
+            : (currentLanguage === 'ar' ? 'الوضع الداكن' : 'Dark mode'));
+        } else {
+          delete document.body.dataset.theme;
+        }
+        const primary = /^#[0-9a-f]{6}$/i.test(brand.primaryColor || '') ? brand.primaryColor : '#627269';
+        document.querySelector('meta[name="theme-color"]').content = primary;
+        const logoPath = brand.logoMode === 'image' ? String(brand.logoPath || '') : '';
+        logo.hidden = !logoPath;
+        if (logoPath) {
+          logo.src = logoPath;
+          logo.alt = currentLanguage === 'en' ? `${brand.nameEn} logo` : `شعار ${brand.nameAr}`;
+        } else {
+          logo.removeAttribute('src');
+          logo.alt = '';
+        }
+      }
+      const brandName = currentLanguage === 'en' ? brand?.nameEn : brand?.nameAr;
+      document.title = brand ? `${brandName} | ${words.title}` : words.title;
+      document.querySelector('#header-label').textContent = brand?.id === 'ryfaq'
+        ? `${brand.nameEn} | ${brand.nameAr} · ${words.title}` : words.title;
+      document.querySelector('#footer-label').textContent = words.footer;
+      document.querySelector('#language-toggle').textContent = currentLanguage === 'ar' ? 'English' : 'العربية';
+      document.querySelector('#language-toggle').setAttribute('aria-label', currentLanguage === 'ar' ? 'Switch language to English' : 'تغيير اللغة إلى العربية');
+      if (!presentationData) { sanitizeRyfaqSurface(); return; }
+      const result = presentationData;
+      const visitsMode = result.presentation?.mode === 'visits';
+      renderVisitBranding(result, brand);
+      if (visitsMode && result.presentation.title) document.title = result.presentation.title;
+      const filterSheetOpen = document.body.dataset.mobileFilterPanelId === 'presentation-filters';
+      videoRailResizeObserver?.disconnect();
+      videoRailResizeObserver = null;
+      if (document.querySelector('#video-preview-dialog').open) closeVideoPreview();
+      app.replaceChildren();
+      const intro = document.createElement('section');
+      intro.className = 'intro';
+      const eyebrow = document.createElement('p'); eyebrow.className = 'eyebrow';
+      eyebrow.textContent = visitsMode && result.presentation.tagline ? result.presentation.tagline : words.subtitle;
+      eyebrow.dir = 'auto';
+      const title = document.createElement('h1');
+      title.textContent = visitsMode && result.presentation.title ? result.presentation.title : result.campaign.name || words.title;
+      title.dir = 'auto';
+      const company = document.createElement('p'); company.className = 'company';
+      company.textContent = visitsMode ? result.campaign.clientCompany || '' : result.campaign.company || '';
+      const meta = document.createElement('div'); meta.className = 'intro-meta hero-stats';
+      if (visitsMode) {
+        if (result.presentation.packageVisitsCount !== null) {
+          const progress = document.createElement('span'); progress.className = 'chip';
+          progress.textContent = words.packageProgress
+            .replace('{completed}', new Intl.NumberFormat(currentLanguage).format(result.presentation.packageVisitsCompleted || 0))
+            .replace('{total}', new Intl.NumberFormat(currentLanguage).format(result.presentation.packageVisitsCount));
+          meta.append(progress);
+        }
+      } else {
+        addChip(meta, words.type, translateServiceType(result.campaign.serviceType));
+        addChip(meta, words.count, new Intl.NumberFormat(currentLanguage).format(result.targets?.length || 0));
+        if (result.fields.includes('followers')) {
+          const totalFollowers = (result.targets || []).reduce((sum, target) => sum + (window.FikratakFollowerTiers?.parse(target.followers) || 0), 0);
+          addChip(meta, words.followers, new Intl.NumberFormat(currentLanguage, { notation: 'compact', maximumFractionDigits: 1 }).format(totalFollowers));
+        }
+        if (result.fields.includes('visitCity')) {
+          const cityCount = new Set((result.targets || []).map((target) => target.visitCity).filter(Boolean)).size;
+          addChip(meta, words.city, new Intl.NumberFormat(currentLanguage).format(cityCount));
+        }
+      }
+      intro.append(eyebrow, title, company, meta);
+      app.append(intro);
+
+      if (visitsMode) {
+        if (!selectedVisitDate) selectedVisitDate = riyadhDateString();
+        const section = document.createElement('section'); section.className = 'section visit-schedule';
+        const heading = document.createElement('h2'); heading.className = 'section-heading'; heading.textContent = words.visitsTitle;
+        const description = document.createElement('p'); description.className = 'section-description'; description.textContent = words.visitsDescription;
+        section.append(heading, description);
+        const dateNavigation = document.createElement('nav'); dateNavigation.className = 'visit-date-navigation';
+        dateNavigation.setAttribute('aria-label', currentLanguage === 'ar' ? 'اختيار يوم الزيارة' : 'Choose visit date');
+        const todayDate = riyadhDateString();
+        for (const [offset, label] of [[-1, words.yesterday], [0, words.today], [1, words.tomorrow]]) {
+          const date = shiftDate(todayDate, offset);
+          const button = document.createElement('button'); button.type = 'button'; button.className = 'visit-date-shortcut';
+          button.textContent = label; button.setAttribute('aria-pressed', String(selectedVisitDate === date));
+          button.addEventListener('click', () => { selectedVisitDate = date; render(); });
+          dateNavigation.append(button);
+        }
+        const previous = document.createElement('button'); previous.type = 'button'; previous.className = 'visit-date-arrow';
+        previous.textContent = '‹'; previous.setAttribute('aria-label', currentLanguage === 'ar' ? 'اليوم السابق' : 'Previous day');
+        previous.addEventListener('click', () => { selectedVisitDate = shiftDate(selectedVisitDate, -1); render(); });
+        const dateInput = document.createElement('input'); dateInput.type = 'date'; dateInput.className = 'visit-date-picker';
+        dateInput.value = selectedVisitDate; dateInput.setAttribute('aria-label', currentLanguage === 'ar' ? 'اختيار تاريخ' : 'Choose date');
+        dateInput.addEventListener('change', () => { if (dateInput.value) { selectedVisitDate = dateInput.value; render(); } });
+        const nextDay = document.createElement('button'); nextDay.type = 'button'; nextDay.className = 'visit-date-arrow';
+        nextDay.textContent = '›'; nextDay.setAttribute('aria-label', currentLanguage === 'ar' ? 'اليوم التالي' : 'Next day');
+        nextDay.addEventListener('click', () => { selectedVisitDate = shiftDate(selectedVisitDate, 1); render(); });
+        dateNavigation.append(previous, dateInput, nextDay);
+        const selectedDateLabel = document.createElement('p'); selectedDateLabel.className = 'visit-selected-date';
+        selectedDateLabel.textContent = formattedVisitDate(selectedVisitDate);
+        section.append(dateNavigation, selectedDateLabel);
+        const dayTargets = (result.targets || []).filter((target) => target.visitDate === selectedVisitDate)
+          .slice().sort((left, right) => (left.visitTime || '99:99').localeCompare(right.visitTime || '99:99'));
+        if (!dayTargets.length) {
+          const empty = document.createElement('div'); empty.className = 'presentation-empty'; empty.textContent = words.noScheduledVisits;
+          section.append(empty);
+        } else {
+          const groups = new Map();
+          for (const target of dayTargets) {
+            const time = target.visitTime || 'later';
+            if (!groups.has(time)) groups.set(time, []);
+            groups.get(time).push(target);
+          }
+          for (const [time, targets] of groups) {
+            const group = document.createElement('section'); group.className = 'date-group';
+            const groupHeading = document.createElement('h3'); groupHeading.textContent = time === 'later' ? words.timeLater : time;
+            group.append(groupHeading);
+            const list = document.createElement('div'); list.className = 'visit-list';
+            for (const target of targets) {
+              const card = document.createElement('article'); card.className = 'visit-card';
+              const avatar = document.createElement('div'); avatar.className = 'avatar';
+              const fallback = target.placeholderImage || '/assets/avatars/neutral.svg';
+              const image = document.createElement('img'); image.alt = ''; image.loading = 'lazy'; image.decoding = 'async';
+              image.referrerPolicy = 'no-referrer'; image.src = fallback;
+              if (result.fields.includes('profileImage') && target.profileImage) {
+                try {
+                  const imageUrl = new URL(target.profileImage, location.origin);
+                  if (imageUrl.protocol === 'https:' || imageUrl.origin === location.origin) image.src = imageUrl.href;
+                } catch {}
+              }
+              image.addEventListener('error', () => { if (image.getAttribute('src') !== fallback) image.src = fallback; }, { once: true });
+              avatar.append(image);
+              const identity = document.createElement('div'); identity.className = 'identity';
+              if (target.name) { const name = document.createElement('strong'); name.textContent = target.name; identity.append(name); }
+              if (target.username) { const username = document.createElement('small'); username.textContent = `@${String(target.username).replace(/^@+/, '')}`; identity.append(username); }
+              const details = document.createElement('div'); details.className = 'details';
+              for (const [field, label] of [['platform', words.platform], ['visitCity', words.city], ['visitBranch', words.branch], ['visitAddress', words.address]]) {
+                if (target[field]) addChip(details, label, target[field]);
+              }
+              card.append(avatar, identity, details); list.append(card);
+            }
+            group.append(list); section.append(group);
+          }
+        }
+        app.append(section);
+      } else if (!result.targets?.length) {
+        const empty = document.createElement('div'); empty.className = 'notice'; empty.textContent = words.noTargets; app.append(empty);
+      } else {
+        const section = document.createElement('section'); section.className = 'section';
+        const heading = document.createElement('h2'); heading.className = 'section-heading'; heading.textContent = words.influencer;
+        const description = document.createElement('p'); description.className = 'section-description'; description.textContent = words.influencerDescription;
+        section.append(heading, description);
+        const filterTrigger = document.createElement('button');
+        filterTrigger.type = 'button';
+        filterTrigger.className = 'mobile-filter-trigger';
+        filterTrigger.dataset.mobileFilterOpen = 'presentation-filters';
+        filterTrigger.dataset.mobileFilterLabelAr = 'الفلاتر';
+        filterTrigger.dataset.mobileFilterLabelEn = 'Filters';
+        filterTrigger.dataset.mobileFilterAriaAr = 'فتح الفلاتر';
+        filterTrigger.dataset.mobileFilterAriaEn = 'Open filters';
+        filterTrigger.setAttribute('aria-controls', 'presentation-filters');
+        filterTrigger.setAttribute('aria-expanded', String(filterSheetOpen));
+        filterTrigger.textContent = currentLanguage === 'ar' ? 'الفلاتر' : 'Filters';
+        const filters = document.createElement('div');
+        filters.className = 'presentation-filters';
+        filters.id = 'presentation-filters';
+        filters.dataset.mobileFilterPanel = '';
+        if (filterSheetOpen) {
+          filters.dataset.mobileFilterOriginalRole = '';
+          filters.setAttribute('role', 'dialog');
+          filters.setAttribute('aria-modal', 'true');
+          filters.classList.add('mobile-filter-sheet-open');
+        }
+        const filterHeading = document.createElement('div');
+        filterHeading.className = 'mobile-filter-sheet-heading';
+        const filterHeadingLabel = document.createElement('strong');
+        filterHeadingLabel.dataset.mobileFilterLabelAr = 'الفلاتر';
+        filterHeadingLabel.dataset.mobileFilterLabelEn = 'Filters';
+        filterHeadingLabel.textContent = currentLanguage === 'ar' ? 'الفلاتر' : 'Filters';
+        const filterClose = document.createElement('button');
+        filterClose.type = 'button';
+        filterClose.className = 'mobile-filter-close';
+        filterClose.dataset.mobileFilterClose = 'presentation-filters';
+        filterClose.dataset.mobileFilterAriaAr = 'إغلاق الفلاتر';
+        filterClose.dataset.mobileFilterAriaEn = 'Close filters';
+        filterClose.setAttribute('aria-label', currentLanguage === 'ar' ? 'إغلاق الفلاتر' : 'Close filters');
+        filterClose.innerHTML = FKIcons.icon('close');
+        filterHeading.append(filterHeadingLabel, filterClose);
+        filters.append(filterHeading);
+        const search = document.createElement('input');
+        search.type = 'search';
+        search.placeholder = currentLanguage === 'ar' ? 'ابحث باسم المؤثر أو الحساب' : 'Search by creator or account';
+        search.setAttribute('aria-label', search.placeholder);
+        search.value = presentationFilters.search;
+        filters.append(search);
+        if (result.fields.includes('platform')) {
+          const platform = document.createElement('select');
+          platform.setAttribute('aria-label', words.platform);
+          platform.append(new Option(currentLanguage === 'ar' ? 'كل المنصات' : 'All platforms', ''));
+          const platforms = [...new Set(result.targets.flatMap((target) => String(target.platform || '').split('·').map((item) => item.trim()).filter(Boolean)))];
+          for (const value of platforms) platform.append(new Option(value, value));
+          platform.value = presentationFilters.platform;
+          filters.append(platform);
+          platform.addEventListener('change', () => { presentationFilters.platform = platform.value; render(); });
+        }
+        if (result.fields.includes('visitCity')) {
+          const city = document.createElement('select');
+          city.setAttribute('aria-label', words.city);
+          city.append(new Option(currentLanguage === 'ar' ? 'كل المدن' : 'All cities', ''));
+          for (const value of [...new Set(result.targets.map((target) => target.visitCity).filter(Boolean))]) city.append(new Option(value, value));
+          city.value = presentationFilters.city;
+          filters.append(city);
+          city.addEventListener('change', () => { presentationFilters.city = city.value; render(); });
+        }
+        const gridButton = document.createElement('button'); gridButton.type = 'button'; gridButton.innerHTML = FKIcons.icon('grid');
+        gridButton.setAttribute('aria-label', currentLanguage === 'ar' ? 'عرض شبكي' : 'Grid view');
+        gridButton.setAttribute('aria-pressed', String(presentationFilters.view === 'grid'));
+        const listButton = document.createElement('button'); listButton.type = 'button'; listButton.innerHTML = FKIcons.icon('list');
+        listButton.setAttribute('aria-label', currentLanguage === 'ar' ? 'عرض قائمة' : 'List view');
+        listButton.setAttribute('aria-pressed', String(presentationFilters.view === 'list'));
+        filters.append(gridButton, listButton);
+        const filterBackdrop = document.createElement('button');
+        filterBackdrop.type = 'button';
+        filterBackdrop.className = 'mobile-filter-backdrop';
+        filterBackdrop.dataset.mobileFilterBackdrop = 'presentation-filters';
+        filterBackdrop.setAttribute('aria-hidden', 'true');
+        filterBackdrop.tabIndex = -1;
+        filterBackdrop.hidden = !filterSheetOpen;
+        search.addEventListener('input', () => {
+          const selection = search.selectionStart;
+          presentationFilters.search = search.value;
+          render();
+          const updatedSearch = document.querySelector('.presentation-filters input[type="search"]');
+          updatedSearch?.focus({ preventScroll: true });
+          updatedSearch?.setSelectionRange(selection, selection);
+        });
+        gridButton.addEventListener('click', () => { presentationFilters.view = 'grid'; render(); });
+        listButton.addEventListener('click', () => { presentationFilters.view = 'list'; render(); });
+        section.append(filterTrigger, filters, filterBackdrop);
+        const groups = new Map();
+        const visibleTargets = result.targets.filter((target) => {
+          const query = presentationFilters.search.trim().toLocaleLowerCase(currentLanguage);
+          if (presentationFilters.platform && !String(target.platform || '').split('·').map((item) => item.trim()).includes(presentationFilters.platform)) return false;
+          if (presentationFilters.city && target.visitCity !== presentationFilters.city) return false;
+          if (query && ![target.name, target.username, target.platform, target.visitCity].filter(Boolean).join(' ').toLocaleLowerCase(currentLanguage).includes(query)) return false;
+          return true;
+        });
+        if (!visibleTargets.length) {
+          const empty = document.createElement('div'); empty.className = 'presentation-empty';
+          empty.textContent = currentLanguage === 'ar' ? 'لا توجد نتائج مطابقة للفلاتر.' : 'No creators match these filters.';
+          section.append(empty);
+        }
+        for (const target of visibleTargets) {
+          const date = result.fields.includes('visitDate') ? (target.visitDate || (currentLanguage === 'ar' ? 'موعد غير محدد' : 'Date not set')) : '';
+          if (!groups.has(date)) groups.set(date, []);
+          groups.get(date).push(target);
+        }
+        for (const [date, targets] of groups) {
+          const group = document.createElement('section'); group.className = 'date-group';
+          if (date) { const groupTitle = document.createElement('h3'); groupTitle.textContent = date; group.append(groupTitle); }
+          const list = document.createElement('div'); list.className = `visit-list${presentationFilters.view === 'list' ? ' list-view' : ''}`;
+          list.addEventListener('click', (event) => {
+            const card = event.target.closest('.visit-card');
+            if (!card || event.target.closest('a,button')) return;
+            const clone = card.cloneNode(true);
+            clone.classList.add('creator-preview-card');
+            document.querySelector('#creator-preview-content').replaceChildren(clone);
+            document.querySelector('#creator-preview-dialog').showModal();
+          });
+          for (const target of targets) {
+            const card = document.createElement('article'); card.className = 'visit-card';
+            const avatar = document.createElement('div'); avatar.className = 'avatar';
+            const fallback = target.placeholderImage || '/assets/avatars/neutral.svg';
+            const image = document.createElement('img'); image.alt = ''; image.loading = 'lazy'; image.decoding = 'async';
+            image.referrerPolicy = 'no-referrer';
+            image.src = fallback;
+            if (result.fields.includes('profileImage')) {
+              image.addEventListener('error', () => { if (image.getAttribute('src') !== fallback) image.src = fallback; }, { once: true });
+              if (target.profileImage) {
+                try {
+                  const imageUrl = new URL(target.profileImage, location.origin);
+                  if (imageUrl.protocol === 'https:' || imageUrl.origin === location.origin) image.src = imageUrl.href;
+                } catch {}
+              }
+            }
+            avatar.replaceChildren(image);
+            const identity = document.createElement('div'); identity.className = 'identity';
+            if (target.name) { const name = document.createElement('strong'); name.textContent = target.name; identity.append(name); }
+            if (target.username) { const username = document.createElement('small'); username.textContent = `@${String(target.username).replace(/^@+/, '')}`; identity.append(username); }
+            const details = document.createElement('div'); details.className = 'details';
+            for (const field of ['platform', 'username', 'followers', 'price', 'visitDate', 'visitTime', 'visitCity', 'visitBranch', 'visitAddress']) {
+              if (!result.fields.includes(field) || field === 'username') continue;
+              if (field === 'platform' && target.platform) {
+                for (const platform of String(target.platform).split('·').map((item) => item.trim()).filter(Boolean)) {
+                  const chip = document.createElement('span'); chip.className = 'chip platform-chip';
+                  const iconPlatform = platform.toLowerCase();
+                  const icon = document.createElement('img'); icon.src = `/assets/platform-${iconPlatform}.${platform === 'Snapchat' ? 'png' : 'jpg'}`; icon.alt = ''; icon.loading = 'lazy';
+                  chip.append(icon, document.createTextNode(platform)); details.append(chip);
+                }
+              } else addChip(details, words[fieldLabels[field]], target[field]);
+            }
+            card.append(avatar, identity, details); list.append(card);
+          }
+          group.append(list); section.append(group);
+        }
+        app.append(section);
+      }
+
+      const selectedVideos = brand?.id === 'ryfaq' ? []
+        : [...(result.companyWorkVideos || []), ...(result.videoReferences || [])];
+      const companyWork = renderCompanyWorkGallery(selectedVideos);
+      if (companyWork) app.append(companyWork);
+
+      if (!visitsMode) {
+        const next = document.createElement('section'); next.className = 'next-step';
+        const nextTitle = document.createElement('h2'); nextTitle.textContent = words.nextTitle;
+        const nextText = document.createElement('p'); nextText.textContent = words.nextText;
+        next.append(nextTitle, nextText); app.append(next);
+      }
+      sanitizeRyfaqSurface();
+    }
+    async function load() {
+      try {
+        const response = await fetch(`/api/campaign-presentations/${encodeURIComponent(token)}`, { credentials: 'omit', cache: 'no-store' });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || copy[currentLanguage].unavailable);
+        presentationData = result;
+        render();
+      } catch (error) {
+        const notice = document.createElement('div'); notice.className = 'notice'; notice.textContent = error.message || copy[currentLanguage].unavailable;
+        app.replaceChildren(notice);
+      }
+    }
+    document.querySelector('#language-toggle').addEventListener('click', () => {
+      currentLanguage = currentLanguage === 'ar' ? 'en' : 'ar';
+      render();
+    });
+    document.querySelector('#video-preview-close').addEventListener('click', closeVideoPreview);
+    document.querySelector('#video-preview-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) closeVideoPreview();
+    });
+    document.querySelector('#video-preview-dialog').addEventListener('close', stopVideoPreview);
+    document.querySelector('#theme-toggle').addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(presentationThemeKey, currentTheme); } catch {}
+      if (presentationData?.brand?.id === 'ryfaq') render();
+    });
+    document.querySelector('#creator-preview-close').addEventListener('click', () => document.querySelector('#creator-preview-dialog').close());
+    document.querySelector('#creator-preview-dialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) event.currentTarget.close();
+    });
+    void load();
+  </script>
+</body>
+</html>

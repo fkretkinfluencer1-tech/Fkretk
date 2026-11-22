@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>تقرير جاهزية النظام</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --text: #162435;
+        --muted: #51657d;
+        --border: #dfe8f3;
+        --good: #0f9d58;
+        --warn: #d97706;
+        --bad: #b42318;
+        --info: #2563eb;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, Tahoma, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: 32px auto;
+        padding: 0 18px 40px;
+      }
+      h1, h2, h3 { margin: 0 0 12px; }
+      .header {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      }
+      .status {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .good { background: rgba(15,157,88,0.1); color: var(--good); }
+      .warn { background: rgba(217,119,6,0.12); color: var(--warn); }
+      .bad { background: rgba(180,35,24,0.12); color: var(--bad); }
+      .info { background: rgba(37,99,235,0.12); color: var(--info); }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin-top: 18px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+      th, td {
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        text-align: right;
+        vertical-align: top;
+      }
+      th { background: #f8fafc; }
+      code {
+        background: #eff6ff;
+        border-radius: 8px;
+        padding: 2px 6px;
+      }
+      ul { margin: 8px 18px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>تقرير جاهزية النظام</h1>
+        <p>تاريخ التقييم: 2026-11-15</p>
+        <div class="status good">✅ جاهز جزئياً للدعم</div>
+        <p>النسخة الحالية مستقرة من ناحية الاختبارات والتحقق الأساسي، مع وجود بنود أمن/تخطيط/استضافة تحتاج توضيحاً قبل النشر النهائي.</p>
+      </div>
+
+      <div class="card">
+        <h2>1) تقرير الحادثة — تكرار المؤثرين</h2>
+        <div class="status warn">⚠️ تم التحقق فقط، بدون حذف/تعديل</div>
+        <ul>
+          <li>الحادثة حقيقية، وسجلت كاستيراد فعلي على قاعدة الإنتاج في 2026-11-15T12:09:28.843Z بواسطة محمد الجاكي.</li>
+          <li>تم إنشاء نسخة احتياطية من قاعدة الإنتاج في <code>backups/fikratak.sqlite-20261115-142205</code> قبل أي تعديل/حذف.</li>
+          <li>لا توجد قاعدة جدولة/metadata لإعادة التراجع عن دفعة في المخطط الحالي، لذلك يجب تنفيذها فقط بعد موافقة صريحة على التنظيف.</li>
+        </ul>
+        <table>
+          <thead>
+            <tr><th>المؤشر</th><th>القيمة</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>إجمالي المؤثرين</td><td>6052</td></tr>
+            <tr><td>المؤثرون بلا حسابات</td><td>3049</td></tr>
+            <tr><td>المؤثرون بلا جنس</td><td>3048</td></tr>
+            <tr><td>مجموعات الأسماء المتكررة بعد التطبيع</td><td>178 مجموعة، 444 سجلًا</td></tr>
+            <tr><td>الدفعة المشتبه فيها</td><td>12:09 UTC، action = influencers.import</td></tr>
+            <tr><td>قيمة الحدث</td><td>{"created":3047,"updated":0,"unchanged":3,"failed":0}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>2) وظائف أساسية</h2>
+        <div class="status good">✅ سليم</div>
+        <ul>
+          <li>اختبارات المشروع تنجح بشكل كامل عبر <code>npm test</code>.</li>
+          <li>فحص بناء/مقارنات الألوان يمر عبر <code>npm run check</code>.</li>
+          <li>تم تحديث <code>production-release</code> عبر <code>npm run release</code>.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>3) الأمان</h2>
+        <div class="status warn">⚠️ يحتاج انتباه</div>
+        <ul>
+          <li>تمت مراجعة حماية الجلسات، والأساس جاهز، لكن يحتاج التحقق الفعلي في بيئة التشغيل النهائية/HTTPS.</li>
+          <li>يحتاج تأكيد عن استضافة النظام (VPS/Windows/بروتوكول HTTPS/الدومين).</li>
+          <li>يحتاج ترتيب سياسة النسخ الاحتياطي، وعدد المستخدمين، وأدوارهم.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>4) التشغيل والبيانات</h2>
+        <div class="status info">⚠️ يحتاج ردي</div>
+        <ul>
+          <li>توجد نسخة احتياطية من قاعدة الإنتاج، لكن لا يحق تنفيذ تنظيف فعلي دون موافقة صريحة.</li>
+          <li>يحتاج تحديد ما إذا كان سيتم حذف السجلات المشبوهة فقط أم بيانات تجريبية قبل الإطلاق.</li>
+          <li>التعامل مع الاستيراد الكبير يتطلب تنفيذ منطق دفعات/تراجع ومراجعته قبل أي تغيير في بيانات الإنتاج.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>5) أسئلة تحتاج ردي</h2>
+        <ul>
+          <li>أين سيتم رفع النظام؟ (VPS/Windows Server/استضافة؟)</li>
+          <li>ماهو النطاق وHTTPS؟</li>
+          <li>كم مستخدم/أدوار؟ ما كلمات السر/التجهيز الأولي؟</li>
+          <li>ما هي سياسة النسخ الاحتياطي؟ كل كم ساعة؟ أين يتم تخزينها؟</li>
+          <li>هل يجب حذف بيانات تجريبية قبل الإطلاق؟</li>
+          <li>بم تودنا التقدم في تنظيف البيانات الفعلية بعد الموافقة؟</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>6) ملخص سريع</h2>
+        <ul>
+          <li>القاعدة الحالية مستقرة إن لم يُطلب تعديل بيانات الإنتاج.</li>
+          <li>تم التوثيق الكامل للحادثة، وجمع الأدلة، ونسخة احتياطية احتفظت بها.</li>
+          <li>الإجراءات المدمرة (حذف/تنظيف/تراجع) معلقة حتى تأكيد صريح منك.</li>
+          <li>الاختبارات والـ check و release سليمون، ولا توجد كتابة على قاعدة الإنتاج أثناء التحقق.</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

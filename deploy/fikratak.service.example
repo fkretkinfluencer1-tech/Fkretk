@@ -1,0 +1,22 @@
+[Unit]
+Description=FKRETK Influencer CRM
+After=network.target
+
+[Service]
+Type=simple
+User=fikratak
+Group=fikratak
+WorkingDirectory=/opt/fikratak
+EnvironmentFile=/etc/fikratak/fikratak.env
+ExecStart=/bin/sh /opt/fikratak/start-production.sh
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fikratak/data /var/backups/fikratak
+
+[Install]
+WantedBy=multi-user.target
