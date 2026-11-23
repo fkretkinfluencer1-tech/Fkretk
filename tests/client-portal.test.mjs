@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
+import { pathToFileURL } from 'node:url';
 import { deflateRawSync, deflateSync } from 'node:zlib';
 import test, { after } from 'node:test';
 import { chromium } from 'playwright';
@@ -15,6 +16,23 @@ const projectDir = new URL('..', import.meta.url);
 const tempDir = await mkdtemp(join(tmpdir(), 'fikratak-client-portal-test-'));
 const dataDir = join(tempDir, 'data');
 const databasePath = join(dataDir, 'fikratak.sqlite');
+const fixedClockPreloadPath = join(tempDir, 'fixed-clock.mjs');
+await writeFile(fixedClockPreloadPath, `
+const NativeDate = globalThis.Date;
+const fixedTime = NativeDate.parse(process.env.FIKRATAK_TEST_NOW || '');
+if (Number.isFinite(fixedTime)) {
+  globalThis.Date = class FixedDate extends NativeDate {
+    constructor(...args) {
+      if (args.length) super(...args);
+      else super(fixedTime);
+    }
+
+    static now() {
+      return fixedTime;
+    }
+  };
+}
+`, 'utf8');
 assertSafeDbPath(databasePath, 'test database');
 await mkdir(dataDir, { recursive: true });
 
@@ -72,6 +90,29 @@ function restartTestServer() {
   serverErrors = '';
   server = spawn(process.execPath, ['--no-warnings', 'server.mjs'], serverOptions);
   server.stderr.on('data', (chunk) => { serverErrors += chunk.toString(); });
+}
+
+async function restartTestServerAt(instant) {
+  if (server.exitCode === null) {
+    server.kill();
+    await once(server, 'exit');
+  }
+  serverErrors = '';
+  server = spawn(process.execPath, [
+    '--no-warnings', '--import', pathToFileURL(fixedClockPreloadPath).href, 'server.mjs'
+  ], {
+    ...serverOptions,
+    env: { ...serverOptions.env, FIKRATAK_TEST_NOW: instant }
+  });
+  server.stderr.on('data', (chunk) => { serverErrors += chunk.toString(); });
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    if (server.exitCode !== null) throw new Error(`Test server stopped after clock setup: ${serverErrors}`);
+    try {
+      if ((await fetch(baseUrl)).status === 200) return;
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Test server did not start with the fixed clock: ${serverErrors}`);
 }
 
 after(async () => {
@@ -3662,4 +3703,256 @@ test('Coverage is an independent video library with role checks and read-only ca
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM coverage_videos WHERE id = ?').get(created.video.id).count, 0);
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM influencers WHERE id = ?').get(coverageInfluencer.record.id).count, 1);
   db.close();
+});
+
+test('visit presentation links isolate advertiser data, visits, branding, and client logos', async () => {
+  const currentAdminCookie = await login('portal-admin', 'Portal-admin-pass-2026!');
+  const adminCall = (path, options = {}) => mustCall(path, { ...options, cookie: currentAdminCookie });
+  const dateParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).map((part) => [part.type, part.value]));
+  const today = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+  const createLink = async ({ label, influencerId, campaignName, companyName, clientName, username, email, brandId, visitTime, city, branch, logoSeed }) => {
+    const campaign = (await adminCall('/api/campaigns', { method: 'POST', body: {
+      campaignName, companyName, campaignType: 'visit', serviceType: 'influencer',
+      startDate: today, endDate: today,
+      targets: [{ id: influencerId, visitDate: today, visitTime, visitCity: city, visitBranch: branch }]
+    } })).campaign;
+    const client = (await adminCall('/api/client-accounts', { method: 'POST', body: {
+      username, email, clientName, companyName,
+      password: `Synthetic-${label}-pass-2026!`, campaignIds: [campaign.id]
+    } })).account;
+    const logo = createPng(logoSeed);
+    const presentation = await adminCall(`/api/campaigns/${campaign.id}/presentations`, { method: 'POST', body: {
+      brandId, clientAccountId: client.id, influencerIds: [influencerId],
+      fields: ['name', 'visitDate', 'visitTime', 'visitCity', 'visitBranch'],
+      presentationMode: 'visits', headerTitle: `${label} Header Marker`,
+      headerTagline: `${label} Tagline Marker`, packageVisitsCount: 1,
+      displayOptions: {
+        showInfluencerDetails: true, showSocialAccounts: true, showFollowers: true,
+        showAdditionalDetails: true, showCompanyWork: false
+      },
+      companyWorkVideoIds: [], videoReferences: [],
+      clientLogo: { mimeType: 'image/png', dataBase64: logo.toString('base64') }
+    } });
+    return { campaign, client, presentation, logo };
+  };
+
+  const alpha = await createLink({
+    label: 'Alpha', influencerId: influencerIds[0],
+    campaignName: 'Alpha Campaign Marker', companyName: 'Alpha Company Marker',
+    clientName: 'Alpha Advertiser Marker', username: 'isolation-alpha-client',
+    email: 'isolation-alpha@example.test', brandId: 'fkretk',
+    visitTime: '09:17', city: 'Alpha City Marker', branch: 'Alpha Visit Marker', logoSeed: 53
+  });
+  const beta = await createLink({
+    label: 'Beta', influencerId: influencerIds[1],
+    campaignName: 'Beta Campaign Marker', companyName: 'Beta Company Marker',
+    clientName: 'Beta Advertiser Marker', username: 'isolation-beta-client',
+    email: 'isolation-beta@example.test', brandId: 'ryfaq',
+    visitTime: '14:29', city: 'Beta City Marker', branch: 'Beta Visit Marker', logoSeed: 197
+  });
+  const readPublicData = async (presentation) => {
+    const response = await fetch(`${baseUrl}/api/campaign-presentations/${presentation.token}`);
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  const alphaData = await readPublicData(alpha.presentation);
+  const betaData = await readPublicData(beta.presentation);
+  const alphaJson = JSON.stringify(alphaData);
+  const betaJson = JSON.stringify(betaData);
+  assert.equal(alphaData.targets.length, 1);
+  assert.equal(betaData.targets.length, 1);
+  assert.equal(alphaData.targets[0].name, 'Visit Creator');
+  assert.equal(betaData.targets[0].name, 'Delivery Creator');
+  assert.equal(alphaData.targets[0].visitTime, '09:17');
+  assert.equal(betaData.targets[0].visitTime, '14:29');
+  assert.equal(alphaData.campaign.clientCompany, 'Alpha Company Marker');
+  assert.equal(betaData.campaign.clientCompany, 'Beta Company Marker');
+  assert.equal(alphaData.presentation.title, 'Alpha Header Marker');
+  assert.equal(betaData.presentation.title, 'Beta Header Marker');
+
+  const linkMarkers = (data) => [
+    data.campaign.name, data.campaign.clientCompany, data.presentation.title,
+    data.presentation.tagline, data.targets[0].name, data.targets[0].visitCity,
+    data.targets[0].visitBranch
+  ].filter((value) => typeof value === 'string' && value);
+  const brandMarkers = (data) => [data.brand.nameAr, data.brand.nameEn]
+    .filter((value) => typeof value === 'string' && value);
+  for (const marker of [...linkMarkers(betaData), ...brandMarkers(betaData)]) {
+    assert.equal(alphaJson.includes(marker), false, `Alpha API leaked Beta marker: ${marker}`);
+  }
+  for (const marker of [...linkMarkers(alphaData), ...brandMarkers(alphaData)]) {
+    assert.equal(betaJson.includes(marker), false, `Beta API leaked Alpha marker: ${marker}`);
+  }
+  assert.equal(alphaJson.includes(betaData.presentation.clientLogoUrl), false);
+  assert.equal(betaJson.includes(alphaData.presentation.clientLogoUrl), false);
+
+  const alphaLogoResponse = await fetch(`${baseUrl}${alphaData.presentation.clientLogoUrl}`);
+  const betaLogoResponse = await fetch(`${baseUrl}${betaData.presentation.clientLogoUrl}`);
+  assert.equal(alphaLogoResponse.status, 200);
+  assert.equal(betaLogoResponse.status, 200);
+  const alphaLogoBytes = Buffer.from(await alphaLogoResponse.arrayBuffer());
+  const betaLogoBytes = Buffer.from(await betaLogoResponse.arrayBuffer());
+  assert.deepEqual(alphaLogoBytes, alpha.logo);
+  assert.deepEqual(betaLogoBytes, beta.logo);
+  assert.notDeepEqual(alphaLogoBytes, betaLogoBytes);
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const [own, other, ownData, otherData] of [
+      [alpha, beta, alphaData, betaData],
+      [beta, alpha, betaData, alphaData]
+    ]) {
+      const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      const pageResponse = await page.goto(`${baseUrl}${own.presentation.url}`, { waitUntil: 'domcontentloaded' });
+      assert.equal(pageResponse.status(), 200);
+      const html = await pageResponse.text();
+      for (const marker of linkMarkers(otherData)) {
+        assert.equal(html.includes(marker), false, `Presentation HTML leaked other-link marker: ${marker}`);
+      }
+      await page.locator('.visit-schedule').waitFor();
+      const visibleText = await page.locator('body').innerText();
+      assert.ok(visibleText.includes(ownData.presentation.title));
+      assert.ok(visibleText.includes(ownData.campaign.clientCompany));
+      assert.ok(visibleText.includes(ownData.targets[0].visitBranch));
+      assert.ok(visibleText.includes(ownData.targets[0].name));
+      for (const marker of linkMarkers(otherData)) {
+        assert.equal(visibleText.includes(marker), false, `Presentation page leaked other-link marker: ${marker}`);
+      }
+      const visibleBranding = await page.locator('#visits-branding').innerText();
+      for (const marker of brandMarkers(otherData)) {
+        assert.equal(visibleBranding.includes(marker), false, `Presentation header leaked other-link brand: ${marker}`);
+      }
+      const clientLogo = page.locator('#client-brand-logo');
+      assert.equal(await clientLogo.isVisible(), true);
+      assert.equal(new URL(await clientLogo.getAttribute('src'), baseUrl).pathname, ownData.presentation.clientLogoUrl);
+      await page.close();
+    }
+
+    await adminCall(`/api/campaigns/${beta.campaign.id}/presentations/${beta.presentation.id}`, {
+      method: 'PATCH', body: { active: false }
+    });
+    const invalidToken = `${alpha.presentation.token.slice(0, -1)}${alpha.presentation.token.endsWith('A') ? 'B' : 'A'}`;
+    for (const token of [invalidToken, beta.presentation.token]) {
+      assert.equal((await fetch(`${baseUrl}/api/campaign-presentations/${token}`)).status, 404);
+      assert.equal((await fetch(`${baseUrl}/api/campaign-presentations/${token}/client-logo`)).status, 404);
+      const page = await browser.newPage();
+      await page.goto(`${baseUrl}/campaign-presentation/${token}`, { waitUntil: 'domcontentloaded' });
+      const notice = page.locator('#app .notice');
+      await notice.waitFor();
+      assert.match(await notice.innerText(), /غير متاح|unavailable/i);
+      assert.equal(await page.locator('.visit-card').count(), 0);
+      const visibleText = await page.locator('body').innerText();
+      for (const marker of [...linkMarkers(alphaData), ...linkMarkers(betaData)]) {
+        assert.equal(visibleText.includes(marker), false, `Unavailable link displayed presentation marker: ${marker}`);
+      }
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('visit presentation day navigation follows Riyadh time across midnight and UTC 21:00', async () => {
+  const currentAdminCookie = await login('portal-admin', 'Portal-admin-pass-2026!');
+  const adminCall = (path, options = {}) => mustCall(path, { ...options, cookie: currentAdminCookie });
+  const dateParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).map((part) => [part.type, part.value]));
+  const riyadhDay = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+  const nextDay = new Date(Date.parse(`${riyadhDay}T00:00:00Z`) + 24 * 60 * 60 * 1000)
+    .toISOString().slice(0, 10);
+  const campaign = (await adminCall('/api/campaigns', { method: 'POST', body: {
+    campaignName: 'Riyadh Clock Boundary Campaign',
+    companyName: 'Riyadh Clock Boundary Company',
+    campaignType: 'visit', serviceType: 'influencer',
+    startDate: riyadhDay, endDate: nextDay,
+    targets: [
+      { id: influencerIds[0], visitDate: riyadhDay, visitTime: '23:59', visitCity: 'Clock City', visitBranch: 'Before midnight' },
+      { id: influencerIds[1], visitDate: nextDay, visitTime: '00:01', visitCity: 'Clock City', visitBranch: 'After midnight' }
+    ]
+  } })).campaign;
+  const client = (await adminCall('/api/client-accounts', { method: 'POST', body: {
+    username: 'riyadh-midnight-client', email: 'riyadh-midnight@example.test',
+    clientName: 'Riyadh Midnight Client', companyName: 'Riyadh Midnight Company',
+    password: 'Synthetic-Riyadh-midnight-2026!', campaignIds: [campaign.id]
+  } })).account;
+  const created = await adminCall(`/api/campaigns/${campaign.id}/presentations`, { method: 'POST', body: {
+    brandId: 'fkretk', clientAccountId: client.id,
+    influencerIds: [influencerIds[0], influencerIds[1]],
+    fields: ['name', 'visitDate', 'visitTime', 'visitCity', 'visitBranch'],
+    presentationMode: 'visits', headerTitle: 'Riyadh Midnight Schedule',
+    headerTagline: '', packageVisitsCount: 2,
+    displayOptions: {
+      showInfluencerDetails: true, showSocialAccounts: true, showFollowers: true,
+      showAdditionalDetails: true, showCompanyWork: false
+    },
+    companyWorkVideoIds: [], videoReferences: []
+  } });
+
+  const scenarios = [
+    {
+      instant: `${riyadhDay}T20:59:00.000Z`,
+      localToday: riyadhDay,
+      completed: 1,
+      yesterday: [],
+      today: ['Visit Creator'],
+      tomorrow: ['Delivery Creator']
+    },
+    {
+      instant: `${riyadhDay}T21:00:00.000Z`,
+      localToday: nextDay,
+      completed: 1,
+      yesterday: ['Visit Creator'],
+      today: ['Delivery Creator'],
+      tomorrow: []
+    },
+    {
+      instant: `${riyadhDay}T21:01:00.000Z`,
+      localToday: nextDay,
+      completed: 2,
+      yesterday: ['Visit Creator'],
+      today: ['Delivery Creator'],
+      tomorrow: []
+    }
+  ];
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const scenario of scenarios) {
+      await restartTestServerAt(scenario.instant);
+      const apiResponse = await fetch(`${baseUrl}/api/campaign-presentations/${created.token}`);
+      assert.equal(apiResponse.status, 200);
+      const publicData = await apiResponse.json();
+      assert.equal(publicData.presentation.packageVisitsCompleted, scenario.completed);
+      assert.deepEqual(
+        publicData.targets.map(({ name, visitDate, visitTime }) => ({ name, visitDate, visitTime })),
+        [
+          { name: 'Visit Creator', visitDate: riyadhDay, visitTime: '23:59' },
+          { name: 'Delivery Creator', visitDate: nextDay, visitTime: '00:01' }
+        ]
+      );
+
+      const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      await page.clock.install({ time: new Date(scenario.instant) });
+      await page.goto(`${baseUrl}${created.url}`, { waitUntil: 'domcontentloaded' });
+      await page.locator('.visit-schedule').waitFor();
+      const shortcuts = page.locator('.visit-date-shortcut');
+      assert.equal(await shortcuts.count(), 3);
+      assert.equal(await shortcuts.nth(1).getAttribute('aria-pressed'), 'true');
+      const expectedDates = [scenario.yesterday, scenario.today, scenario.tomorrow];
+      for (let index = 0; index < expectedDates.length; index += 1) {
+        await shortcuts.nth(index).click();
+        const cards = page.locator('.visit-card');
+        assert.deepEqual(await cards.locator('.identity strong').allTextContents(), expectedDates[index]);
+        if (expectedDates[index].length) {
+          const expectedTime = expectedDates[index][0] === 'Visit Creator' ? '23:59' : '00:01';
+          assert.ok((await page.locator('.date-group h3').allTextContents()).includes(expectedTime));
+        }
+      }
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });
