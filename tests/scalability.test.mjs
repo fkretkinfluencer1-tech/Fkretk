@@ -207,6 +207,36 @@ test('database export, filtering, details, imports, and campaign linking work be
   const newRecord = fixture.prepare(`SELECT id FROM influencers
     WHERE json_extract(record_json, '$."Username I"') = 'api_added_scale_creator'`).get();
   assert.ok(newRecord);
+  assert.equal(fixture.prepare('SELECT COUNT(*) AS count FROM influencers').get().count, 10001);
+
+  const unchangedPreviewResponse = await fetch(`${baseUrl}/api/import/preview`, {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ rows: [{
+      Name: ' Scale Creator 00001 ',
+      'Username I': ' SCALE_CREATOR_00001 ',
+      City: ' Riyadh '
+    }] })
+  });
+  assert.equal(unchangedPreviewResponse.status, 200);
+  const unchangedPreview = (await unchangedPreviewResponse.json()).preview.integrity;
+  assert.deepEqual({ unchanged: unchangedPreview.unchanged, updates: unchangedPreview.updates }, {
+    unchanged: 1, updates: 0
+  });
+  const updatedPreviewResponse = await fetch(`${baseUrl}/api/import/preview`, {
+    method: 'POST',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ rows: [{
+      'Username I': 'scale_creator_00001',
+      City: 'Changed Riyadh'
+    }] })
+  });
+  assert.equal(updatedPreviewResponse.status, 200);
+  const updatedPreview = (await updatedPreviewResponse.json()).preview.integrity;
+  assert.deepEqual({ unchanged: updatedPreview.unchanged, updates: updatedPreview.updates }, {
+    unchanged: 0, updates: 1
+  });
+
   const campaign = await request('/api/campaigns', {
     method: 'POST',
     body: {

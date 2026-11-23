@@ -572,6 +572,76 @@ test('normalized account matching, shared phones, conflicts, batch undo, and acc
   t.diagnostic('Username identity matching, shared phone storage, batch undo, and platform-account uniqueness verified on isolated SQLite database.');
 });
 
+test('follower imports round suffixed values and warn without skipping invalid counts', { concurrency: false }, async () => {
+  const roundedFollowerImport = await importFile(importBody([{
+    Name: 'Synthetic Rounded Follower Creator',
+    'Username Instagram': 'rounded_follower_creator',
+    'Followers Count Instagram': '99.9999K'
+  }]), { confirmAllNew: true });
+  assert.equal(roundedFollowerImport.body.created, 1);
+  assert.equal(roundedFollowerImport.body.failed, 0);
+  assert.equal(query(`SELECT json_extract(record_json, '$."Followers Count I"') AS count FROM influencers
+    WHERE json_extract(record_json, '$.Name') = 'Synthetic Rounded Follower Creator'`).count, '100000');
+
+  const source = importBody([
+    { Name: 'Synthetic Invalid Follower Creator', 'Username Instagram': 'invalid_follower_creator', 'Followers Count Instagram': '9.9' },
+    { Name: 'Synthetic Valid Follower Creator', 'Username Instagram': 'valid_follower_creator', 'Followers Count Instagram': '10K' }
+  ], 'invalid-follower.csv');
+  const previewResult = await preview(source);
+  assert.deepEqual(previewResult.integrity.warnings.map(({ row, reason }) => ({ row, reason })), [
+    { row: 1, reason: 'invalid-follower-count' }
+  ]);
+  assert.deepEqual({
+    creates: previewResult.integrity.creates,
+    issues: previewResult.integrity.issues.length
+  }, { creates: 2, issues: 0 });
+  const imported = await importFile(source, { confirmAllNew: true });
+  assert.equal(imported.body.created, 2);
+  assert.equal(imported.body.failed, 0);
+  assert.deepEqual(imported.body.warnings.map(({ row, reason }) => ({ row, reason })), [
+    { row: 1, reason: 'invalid-follower-count' }
+  ]);
+  assert.equal(query(`SELECT json_extract(record_json, '$."Followers Count I"') AS count FROM influencers
+    WHERE json_extract(record_json, '$.Name') = 'Synthetic Invalid Follower Creator'`).count, '');
+  assert.equal(query(`SELECT json_extract(record_json, '$."Followers Count I"') AS count FROM influencers
+    WHERE json_extract(record_json, '$.Name') = 'Synthetic Valid Follower Creator'`).count, '10000');
+});
+
+test('a unique account match takes precedence over a shared phone across repeated previews', { concurrency: false }, async () => {
+  const phoneHolder = await importFile(importBody([{
+    Name: 'Synthetic Shared Phone Holder',
+    Number: '0555010777',
+    'Username Instagram': 'shared_phone_holder'
+  }], 'shared-phone-holder.csv'), { confirmAllNew: true });
+  assert.equal(phoneHolder.body.created, 1);
+  const owner = await importFile(importBody([{
+    Name: 'Synthetic Account Without Phone',
+    'Username Instagram': 'account_without_phone'
+  }], 'account-without-phone.csv'), { confirmAllNew: true });
+  assert.equal(owner.body.created, 1);
+
+  const source = importBody([{
+    'Username Instagram': 'account_without_phone',
+    Number: '0555010777'
+  }], 'account-shared-with-account.csv');
+  const firstPreview = await preview(source);
+  const secondPreview = await preview(source);
+  for (const result of [firstPreview, secondPreview]) {
+    assert.deepEqual({
+      updates: result.integrity.updates,
+      needsReview: result.integrity.needsReview,
+      sharedPhoneRows: result.integrity.sharedPhoneRows,
+      issues: result.integrity.issues
+    }, { updates: 1, needsReview: 0, sharedPhoneRows: [1], issues: [] });
+  }
+  const imported = await importFile(source);
+  assert.equal(imported.body.updated, 1);
+  assert.equal(imported.body.failed, 0);
+  assert.equal(imported.body.sharedPhones, 1);
+  assert.equal(query(`SELECT json_extract(record_json, '$."Phone Shared"') AS shared FROM influencers
+    WHERE json_extract(record_json, '$."Username I"') = 'account_without_phone'`).shared, 'رقم مشترك');
+});
+
 test('Campaign Ref is ignored while other unknown import columns remain blocked', { concurrency: false }, async () => {
   const accepted = importBody([{
     Name: 'Synthetic Campaign Ref Creator',

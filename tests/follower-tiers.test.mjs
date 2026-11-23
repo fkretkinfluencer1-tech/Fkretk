@@ -21,6 +21,10 @@ test('canonical follower tiers match the agreed inclusive boundaries', () => {
 test('missing and malformed counts stay unclassified; localized numbers parse', () => {
   for (const value of ['', null, undefined, 'unknown']) assert.equal(rules.classify(value), '');
   assert.equal(rules.classify('0.9K'), 'Nano');
+  assert.equal(rules.parse('99.9K'), 99900);
+  assert.equal(rules.parse('99.9999K'), 100000);
+  assert.equal(rules.parse('1.234567M'), 1234567);
+  assert.equal(rules.parse('9.9'), 9.9);
   assert.equal(rules.classify('٥٠٬٠٠٠'), 'Micro');
   assert.equal(rules.classify('1.5M'), 'Mega');
   assert.equal(rules.highest(['50K', '500K', '999']), 'Semi Mega');

@@ -48,7 +48,7 @@
           <div class="form-field"><label for="reset-new-password">كلمة المرور الجديدة</label><input id="reset-new-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></div>
           <button class="button button-primary" type="submit">تحديث كلمة المرور</button>
         </form>
-        <button type="button" class="auth-link-button" id="forgot-password-button">تواصل مع مدير النظام</button>
+        <p class="auth-contact-note">تواصل مع مدير النظام</p>
         <button class="button button-secondary" id="back-to-login-button" type="button" hidden>العودة لتسجيل الدخول</button>
         <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
         <p class="auth-tip" id="auth-tip">لا تشارك بيانات الدخول. سيطلب منك إنشاء حساب المدير عند تشغيل النظام لأول مرة.</p>
@@ -2221,7 +2221,6 @@
       $('#setup-token').required = setupTokenRequired;
       $('#reset-request-form').hidden = true;
       $('#reset-confirm-form').hidden = true;
-      $('#forgot-password-button').hidden = setupRequired;
       $('#back-to-login-button').hidden = true;
       $('#auth-eyebrow').textContent = text(setupRequired ? 'الإعداد الأولي' : 'تسجيل الدخول');
       $('#auth-title').textContent = text(setupRequired ? 'إنشاء حساب المدير' : 'مرحبًا بعودتك');
@@ -4355,7 +4354,7 @@
         'unknown-record-id': english ? 'The record ID does not exist in this database.' : 'معرّف السجل غير موجود في قاعدة البيانات.',
         'ambiguous-exact-record': english ? 'The exact record already exists more than once.' : 'السجل المطابق موجود بأكثر من نسخة.',
         'missing-stable-identity': english ? 'A stable record identity is required.' : 'يلزم معرّف ثابت للسجل.',
-        'invalid-follower-count': english ? 'The follower count is invalid.' : 'عدد المتابعين غير صالح.',
+        'invalid-follower-count': english ? 'The follower count is invalid and will be left blank.' : 'عدد المتابعين غير صالح؛ سيُترك فارغًا.',
         'invalid-username': english ? 'The platform username is invalid.' : 'اسم مستخدم المنصة غير صالح.',
         'invalid-row': english ? 'The row is invalid.' : 'بيانات الصف غير صالحة.',
         'invalid-image-archive': english ? 'Invalid or oversized ZIP file.' : 'ملف ZIP غير صالح أو أكبر من الحد.',
@@ -4368,19 +4367,21 @@
         'invalid-image-content': english ? 'The file is not a valid image.' : 'محتوى الملف ليس صورة صالحة.',
         'multiple-images-for-influencer': english ? 'More than one image targets this row.' : 'توجد أكثر من صورة للصف نفسه.'
       };
-      const reviewEntries = [...(preview.integrity?.issues || []), ...(preview.issues || [])];
+      const reviewEntries = [...(preview.integrity?.issues || []), ...(preview.integrity?.warnings || []), ...(preview.issues || [])];
       for (const row of preview.integrity?.sharedPhoneRows || []) reviewEntries.push({ row, reason: 'shared-phone' });
       for (const column of preview.unknownColumns || []) reviewEntries.push({ row: '', reason: 'unknown-column', column });
       $('#import-review-download').hidden = reviewEntries.length === 0;
       $('#import-review-download').textContent = english ? 'Download review list (CSV)' : 'تنزيل قائمة المراجعة (CSV)';
       for (const issue of [
         ...(preview.integrity?.issues || []),
+        ...(preview.integrity?.warnings || []),
         ...(preview.issues || []),
         ...(preview.alignmentWarnings || [])
       ]) {
         const entry = document.createElement('li');
         const platform = issue.platform ? ` (${issue.platform})` : '';
-        entry.textContent = `${issue.fileName || `${english ? 'Row' : 'الصف'} ${count(issue.row)}`}${platform}: ${reasonLabels[issue.reason] || issue.reason}`;
+        const field = issue.field ? ` (${issue.field})` : '';
+        entry.textContent = `${issue.fileName || `${english ? 'Row' : 'الصف'} ${count(issue.row)}`}${platform}${field}: ${reasonLabels[issue.reason] || issue.reason}`;
         issues.append(entry);
       }
       $('#import-preview-issues-title').hidden = !issues.childElementCount;
@@ -4404,12 +4405,13 @@
       if (!preview) return;
       const rows = [
         ...(preview.integrity?.issues || []),
+        ...(preview.integrity?.warnings || []),
         ...(preview.issues || [])
       ].map((issue) => ({
         row: issue.row ?? '',
         issue: issue.reason,
-        details: Array.isArray(issue.accounts) ? issue.accounts.map((item) =>
-          Array.isArray(item) ? item.join(': ') : `${item.platform || ''} @${item.username || ''}`).join(' | ') : ''
+        details: issue.field || (Array.isArray(issue.accounts) ? issue.accounts.map((item) =>
+          Array.isArray(item) ? item.join(': ') : `${item.platform || ''} @${item.username || ''}`).join(' | ') : '')
       }));
       for (const row of preview.integrity?.sharedPhoneRows || []) rows.push({ row, issue: 'shared-phone', details: '' });
       for (const column of preview.unknownColumns || []) rows.push({ row: '', issue: 'unknown-column', details: column });
@@ -8279,7 +8281,6 @@
       const resetRequest = $('#reset-request-form');
       const resetConfirm = $('#reset-confirm-form');
       const loginForm = $('#login-form');
-      const forgotButton = $('#forgot-password-button');
       const backButton = $('#back-to-login-button');
       const showLogin = mode === 'login';
       const showRequest = mode === 'request';
@@ -8287,7 +8288,6 @@
       loginForm.hidden = !showLogin;
       resetRequest.hidden = !showRequest;
       resetConfirm.hidden = !showConfirm;
-      forgotButton.hidden = !showLogin;
       backButton.hidden = showLogin;
       if (showRequest) {
         $('#auth-eyebrow').textContent = text('استعادة كلمة المرور');

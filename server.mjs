@@ -263,6 +263,24 @@ function parseImportedFollowerCount(value) {
   const count = parseFollowerValue(value);
   return Number.isSafeInteger(count) && count >= 0 ? count : null;
 }
+function normalizeImportedFollowerCounts(input, rowIndex, sourceInput = input) {
+  const record = { ...input };
+  const warnings = [];
+  for (const field of influencerImportAccountFields) {
+    const value = record[field.followers];
+    if (value === undefined || String(value ?? '').trim() === '') continue;
+    const count = parseImportedFollowerCount(value);
+    if (count === null) {
+      record[field.followers] = '';
+      warnings.push({
+        row: importIssueRow(sourceInput, rowIndex),
+        reason: 'invalid-follower-count',
+        field: field.followers
+      });
+    } else record[field.followers] = String(count);
+  }
+  return { record, warnings };
+}
 function deriveInfluencerFields(record) {
   const accounts = [
     { followers: 'Followers Count T', type: 'Influencer Type T' },
@@ -4062,25 +4080,13 @@ function stableRecordJson(record) {
   return JSON.stringify(normalize(record));
 }
 
-function suppliedImportFieldsMatch(existing, canonicalInput, incoming) {
-  let compared = false;
-  for (const field of influencerImportAccountFields) {
-    const suppliedUsername = String(canonicalInput[field.username] ?? '').trim();
-    if (suppliedUsername) {
-      compared = true;
-      if (normalizedImportUsername(suppliedUsername)
-        !== normalizedImportUsername(existing[field.username])) return false;
-    }
-    const suppliedFollowers = String(canonicalInput[field.followers] ?? '').trim();
-    if (suppliedFollowers) {
-      compared = true;
-      const incomingCount = parseImportedFollowerCount(incoming[field.followers]);
-      const existingCount = parseImportedFollowerCount(existing[field.followers]);
-      if (incomingCount === null || existingCount === null || incomingCount !== existingCount) return false;
-    }
+function hasSuppliedImportChanges(existing, canonicalInput, incoming) {
+  for (const [key, value] of Object.entries(canonicalInput)) {
+    if (Array.isArray(value) ? value.length === 0 : String(value ?? '').trim() === '') continue;
+    const normalizedValue = incoming[key] === undefined ? value : incoming[key];
+    if (stableRecordJson(existing[key]) !== stableRecordJson(normalizedValue)) return true;
   }
-  if (!compared) return false;
-  return true;
+  return false;
 }
 
 function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreArchivedMatches = false } = {}) {
@@ -4114,7 +4120,7 @@ function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreA
   const result = {
     total: rows.length, valid: 0, conflicts: 0, duplicates: 0, creates: 0, updates: 0,
     unchanged: 0, skipped: 0, matchedByPhone: 0, matchedByAccount: 0,
-    needsReview: 0, sharedPhoneRows: [], issues: [], accountMatches: []
+    needsReview: 0, sharedPhoneRows: [], issues: [], warnings: [], accountMatches: []
   };
   const registerAccountOwners = (record, id, remove = false) => {
     for (const [key] of accountsFor(record)) {
@@ -4158,13 +4164,10 @@ function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreA
           const alias = field.aliases.find((name) => String(canonicalInput[name] || '').trim());
           if (alias) canonicalInput[field.username] = canonicalInput[alias];
         }
-        const count = canonicalInput[field.followers];
-        if (count !== undefined && String(count ?? '').trim()) {
-          const parsed = parseImportedFollowerCount(count);
-          if (parsed === null) throw new Error('invalid-follower-count');
-          canonicalInput[field.followers] = String(parsed);
-        }
       }
+      const followerNormalization = normalizeImportedFollowerCounts(canonicalInput, index, input);
+      Object.assign(canonicalInput, followerNormalization.record);
+      result.warnings.push(...followerNormalization.warnings);
       const incoming = normalizedImportRecord(canonicalInput);
       const phoneKey = normalizePhone(incoming);
       const rowAccounts = accountsFor(incoming);
@@ -4181,11 +4184,6 @@ function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreA
         reject('archived-match-needs-restore'); continue;
       }
       const existingPhoneKey = existing?.phoneKey || (existing ? normalizePhone(existing.record) : null);
-      if (existing && phoneKey
-        && [...(recordsByPhone.get(phoneKey) || [])].some((owner) => owner.id !== existing.id)) {
-        reject('identity-conflict', { accounts: rowAccounts.map(([, platform]) => platform) });
-        continue;
-      }
       if (existing && phoneKey && existingPhoneKey && phoneKey !== existingPhoneKey) {
         reject('phone-number-changed-needs-review', { matchedByAccount: true });
         continue;
@@ -4222,11 +4220,15 @@ function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreA
       const nextPhoneKey = phoneKey || existingPhoneKey;
       result.valid += 1;
       result.matchedByAccount += 1;
-      if (suppliedImportFieldsMatch(existing.record, canonicalInput, incoming)
+      if (!existing.archivedAt
+        && !hasSuppliedImportChanges(existing.record, canonicalInput, incoming)
+        && stableRecordJson(merged) === stableRecordJson(existing.record)
         && nextPhoneKey === existing.phoneKey) {
         result.unchanged += 1;
         result.duplicates += 1;
-      } else result.updates += 1;
+        continue;
+      }
+      result.updates += 1;
       registerAccountOwners(existing.record, existing.id, true);
       removePhoneOwner(existingPhoneKey, existing.id);
       existing.record = updatedRecord;
@@ -10103,6 +10105,9 @@ async function handleApi(request, response, url) {
             const alias = field.aliases.find((name) => String(canonicalInput[name] || '').trim());
             if (alias) canonicalInput[field.username] = canonicalInput[alias];
           }
+          const followerNormalization = normalizeImportedFollowerCounts(canonicalInput, index, input);
+          Object.assign(canonicalInput, followerNormalization.record);
+          warnings.push(...followerNormalization.warnings);
           const incoming = normalizedImportRecord(canonicalInput);
           const identities = accountKeys(incoming);
           const phoneKey = normalizePhone(incoming);
@@ -10121,10 +10126,6 @@ async function handleApi(request, response, url) {
             throw new Error('archived-match-needs-restore');
           }
           const existingPhoneKey = existing?.phoneKey || (existing ? normalizePhone(existing.record) : null);
-          if (existing && phoneKey
-            && [...(existingByPhone.get(phoneKey) || [])].some((owner) => owner.id !== existing.id)) {
-            throw new Error('identity-conflict');
-          }
           if (existing && phoneKey && existingPhoneKey && phoneKey !== existingPhoneKey) {
             throw new Error('phone-number-changed-needs-review');
           }
@@ -10178,7 +10179,10 @@ async function handleApi(request, response, url) {
           assertAccountOwnership(updatedRecord, existing.id);
           expectedAccountDelta += accountKeys(updatedRecord).length - accountKeys(previous).length;
           const recordJson = JSON.stringify(updatedRecord);
-          if (!existing.archivedAt && stableRecordJson(updatedRecord) === stableRecordJson(previous) && nextPhoneKey === existing.phoneKey) {
+          if (!existing.archivedAt
+            && !hasSuppliedImportChanges(previous, canonicalInput, incoming)
+            && stableRecordJson(merged) === stableRecordJson(previous)
+            && nextPhoneKey === existing.phoneKey) {
             rowTargetIds[index] = existing.id;
             unchanged += 1;
             rowResults[index] = { row: importIssueRow(input, index), result: 'unchanged' };

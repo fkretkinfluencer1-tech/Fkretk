@@ -25,7 +25,8 @@
     if (!match) return null;
     const multiplier = { k: 1e3, m: 1e6, b: 1e9 }[String(match[2] || '').toLowerCase()] || 1;
     const count = Number(match[1]) * multiplier;
-    return Number.isFinite(count) ? count : null;
+    const roundedCount = ['k', 'm'].includes(String(match[2] || '').toLowerCase()) ? Math.round(count) : count;
+    return Number.isFinite(roundedCount) ? roundedCount : null;
   }
 
   function classify(value) {

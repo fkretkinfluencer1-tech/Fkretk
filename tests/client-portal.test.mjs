@@ -2477,11 +2477,12 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
   });
   assert.deepEqual(
     { created: secondImport.created, updated: secondImport.updated, unchanged: secondImport.unchanged, failed: secondImport.failed },
-    { created: 1, updated: 1, unchanged: 0, failed: 2 },
-    JSON.stringify(secondImport.issues)
+    { created: 2, updated: 2, unchanged: 0, failed: 0 },
+    JSON.stringify({ issues: secondImport.issues, warnings: secondImport.warnings })
   );
-  assert.deepEqual(secondImport.issues.map(issue => issue.reason).sort(), [
-    'identity-conflict', 'invalid-follower-count'
+  assert.deepEqual(secondImport.issues, []);
+  assert.deepEqual(secondImport.warnings.map(({ row, reason }) => ({ row, reason })), [
+    { row: 4, reason: 'invalid-follower-count' }
   ]);
   const resultDb = new DatabaseSync(databasePath, { readOnly: true });
   const matchingRecords = resultDb.prepare('SELECT id, record_json FROM influencers').all()
@@ -2499,6 +2500,12 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
   assert.equal(importedInstagram.record.Full_Mobile_Number, '+966555010101');
   assert.equal(importedInstagram.record['Import Source Column'], 'source-retained');
   assert.equal(importedTikTok.record['Followers Count T'], '12000');
+  const sharedPhoneRecord = resultDb.prepare(`SELECT record_json FROM influencers
+    WHERE json_extract(record_json, '$."Username I"') = 'qa_conflict_existing'`).get();
+  assert.equal(JSON.parse(sharedPhoneRecord.record_json)['Phone Shared'], 'رقم مشترك');
+  const invalidFollowerRecord = resultDb.prepare(`SELECT record_json FROM influencers
+    WHERE json_extract(record_json, '$."Username I"') = 'qa_invalid_follower'`).get();
+  assert.equal(JSON.parse(invalidFollowerRecord.record_json)['Followers Count I'], '');
   assert.equal(resultDb.prepare(`SELECT COUNT(*) AS count FROM influencer_follower_history
     WHERE influencer_id = ? AND platform = 'Instagram' AND followers_count = 26000 AND previous_count = 10000 AND source = 'import'`)
     .get(importedRecord.id).count, 1);
@@ -2506,7 +2513,7 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
     .get(importedRecord.id).count, 1);
   assert.equal(resultDb.prepare('SELECT influencer_id FROM campaign_targets WHERE campaign_id = ? AND influencer_id = ?')
     .get(linkedCampaign.campaign.id, importedRecord.id).influencer_id, importedRecord.id);
-  assert.equal(resultDb.prepare('SELECT COUNT(*) AS count FROM influencers').get().count, initialCount + 4);
+  assert.equal(resultDb.prepare('SELECT COUNT(*) AS count FROM influencers').get().count, initialCount + 5);
   resultDb.close();
 
   const noAccountWithId = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
@@ -2672,15 +2679,17 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
 });
 
 test('manual influencer creation names the owner when a normalized account is already assigned', async () => {
-  await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+  const owner = await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
     Name: 'Synthetic account owner',
     'Username I': 'qa_manual_account_owner',
     Full_Mobile_Number: '+966555700201'
   } });
+  assert.equal(owner.record['Username I'], 'qa_manual_account_owner');
   const conflict = await call('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
     Name: 'Synthetic duplicate', 'Username I': ' @ Qa_Manual_Account_Owner '
   } });
   assert.equal(conflict.response.status, 409);
+  assert.deepEqual(conflict.body.conflict.influencerIds, [owner.record.id]);
   assert.deepEqual(conflict.body.conflict.influencerNames, ['Synthetic account owner']);
   assert.match(conflict.body.error, /Synthetic account owner/);
   const phoneConflict = await call('/api/influencers', { method: 'POST', cookie: editorCookie, body: {

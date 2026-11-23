@@ -304,7 +304,8 @@ test('admin login uses the split-screen design with one logo and icon-only float
   assert.doesNotMatch(authShell, /<header class="topbar"/);
   assert.equal((authShell.match(/class="auth-mark"/g) || []).length, 1);
   assert.match(authShell, /class="auth-floating-tools"/);
-  assert.match(authShell, /class="auth-link-button" id="forgot-password-button"/);
+  assert.match(authShell, /<p class="auth-contact-note">تواصل مع مدير النظام<\/p>/);
+  assert.doesNotMatch(authShell, /<(?:button|a)[^>]*>تواصل مع مدير النظام/);
   assert.doesNotMatch(authShell, /fkretkinfluencer1@gmail\.com/);
   assert.match(managementStyles, /\.auth-main \{ display: grid; width: 100%; max-width: none; min-height: 100vh; height: 100vh; grid-template-columns: 1fr 1fr/);
   assert.match(managementStyles, /\.auth-form \.form-field input \{ height: 48px/);

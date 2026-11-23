@@ -1533,8 +1533,6 @@
       .auth-form .form-field input:focus { border-color: var(--fk-blue-500); box-shadow: var(--fk-focus-ring); outline: 0; }
       .auth-form .button { min-height: 48px; margin-top: 2px; border-radius: 12px; }
       .password-visibility-toggle { width: 40px; color: var(--fk-muted); }
-      .auth-link-button { align-self: center; margin-top: 16px; padding: 0; border: 0; color: var(--fk-blue-500); background: transparent; font-size: 13px; font-weight: 700; text-decoration: none; }
-      .auth-link-button:hover { color: var(--fk-blue-600); text-decoration: underline; }
       .auth-message { color: var(--fk-danger); }
       .auth-tip { color: var(--fk-muted); }
       .dashboard-metrics { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
