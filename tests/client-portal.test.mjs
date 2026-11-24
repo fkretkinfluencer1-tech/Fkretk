@@ -1216,6 +1216,7 @@ test('editor mirrors admin operations except system-user administration while vi
     { path: '/api/users', method: 'GET' },
     { path: '/api/users', method: 'POST', body: { username: 'blocked-editor-user', role: 'viewer', password: 'Blocked-user-pass-2026!' } },
     { path: `/api/users/${editor.id}`, method: 'PUT', body: { role: 'viewer', password: 'Blocked-user-pass-2026!' } },
+    { path: `/api/users/${viewer.id}`, method: 'PUT', body: { role: 'admin', password: 'Blocked-user-pass-2026!' } },
     { path: `/api/users/${editor.id}`, method: 'DELETE' }
   ];
   for (const request of userManagementRequests) {
