@@ -110,13 +110,14 @@ test('Arabic typography and text selection are consistent across system pages an
   }
 });
 
-test('admin database adds accessible selection, filter chips, and role-gated bulk controls', () => {
+test('database adds accessible selection, filter chips, and editor-gated bulk controls', () => {
   for (const id of ['database-select-page', 'database-active-filters', 'database-bulk-actions',
     'database-export-selected', 'database-archive-selected', 'database-column-options']) {
     assert.ok(managementHtml.includes(`id="${id}"`), `Missing database control ${id}`);
   }
-  assert.match(managementHtml, /state\.user\?\.role !== 'admin' \|\|/);
-  assert.match(managementHtml, /state\.user\?\.role !== 'admin' \|\| !state\.databaseSelectedIds\.size/);
+  assert.match(managementHtml, /function canManageApp\(user = state\.user\) \{\s*return \['admin', 'editor'\]\.includes\(user\?\.role\);\s*\}/);
+  assert.match(managementHtml, /database-export-selected'\)\.hidden = !canManageApp\(\)/);
+  assert.match(managementHtml, /if \(!canManageApp\(\) \|\| !state\.databaseSelectedIds\.size/);
   assert.match(managementHtml, /data-database-column-toggle/);
   assert.match(managementStyles, /#table-wrap tbody tr \{ height:\s*56px/);
   assert.match(managementStyles, /\.table-wrap thead \{ position:\s*sticky/);

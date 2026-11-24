@@ -1973,9 +1973,9 @@
       if (state.user) {
         $('#current-role').textContent = text(ROLE_LABELS[state.user.role] || state.user.role);
         const activeTab = document.querySelector('.section-tab[aria-selected="true"]');
-        const activeSection = activeTab?.id === 'about-tab' ? 'about' : activeTab?.id === 'account-conflicts-tab' && state.user.role === 'admin' ? 'account-conflicts' : activeTab?.id === 'audit-tab' && state.user.role === 'admin' ? 'audit' : activeTab?.id === 'campaigns-tab' ? 'campaigns' : activeTab?.id === 'coverage-tab' ? 'coverage' : activeTab?.id === 'company-work-videos-tab' ? 'company-work-videos' : activeTab?.id === 'client-prep-tab' && ['admin', 'editor'].includes(state.user.role) ? 'client-prep' : activeTab?.id === 'lookup-tab' ? 'lookup' : activeTab?.id === 'database-tab' ? 'database' : 'dashboard';
+        const activeSection = activeTab?.id === 'about-tab' ? 'about' : activeTab?.id === 'account-conflicts-tab' && canManageApp(state.user) ? 'account-conflicts' : activeTab?.id === 'audit-tab' && canManageApp(state.user) ? 'audit' : activeTab?.id === 'campaigns-tab' ? 'campaigns' : activeTab?.id === 'coverage-tab' ? 'coverage' : activeTab?.id === 'company-work-videos-tab' ? 'company-work-videos' : activeTab?.id === 'client-prep-tab' && canManageApp(state.user) ? 'client-prep' : activeTab?.id === 'lookup-tab' ? 'lookup' : activeTab?.id === 'database-tab' ? 'database' : 'dashboard';
         activateSection(activeSection, false);
-        if (state.user.role === 'admin') void loadBackupStatus();
+        if (canManageApp(state.user)) void loadBackupStatus();
         renderDatabaseViews();
         if ($('#editor-dialog').open) {
           const record = state.recordsById.get(state.editingId) || {};
@@ -2073,7 +2073,7 @@
 
     let sensitiveConfirmationResolve = null;
     function askSensitiveConfirmation(title = 'تأكيد العملية الحساسة') {
-      if (state.user?.role !== 'admin') return Promise.resolve(null);
+      if (!canManageApp()) return Promise.resolve(null);
       const dialog = $('#sensitive-confirm-dialog');
       const form = $('#sensitive-confirm-form');
       form.reset();
@@ -2167,7 +2167,7 @@
     }
 
     async function loadBackupStatus() {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       const status = $('#backup-status');
       const button = $('#backup-now-button');
       const excelButton = $('#influencer-excel-now-button');
@@ -2242,13 +2242,17 @@
       } catch { return []; }
     }
 
+    function canManageApp(user = state.user) {
+      return ['admin', 'editor'].includes(user?.role);
+    }
+
     function showApp(user) {
       state.user = user;
       $('#auth-screen').style.display = 'none';
       $('#app-shell').style.display = 'grid';
       $('#current-username').textContent = user.username;
       $('#current-role').textContent = text(ROLE_LABELS[user.role] || user.role);
-      const canEdit = ['admin', 'editor'].includes(user.role);
+      const canEdit = canManageApp(user);
       if (canEdit) void loadImportAvailability();
       $('#campaign-builder-panel').hidden = !canEdit;
       $('#company-work-video-form').hidden = !canEdit;
@@ -2261,23 +2265,23 @@
       $('#import-start-button').hidden = !canEdit;
       $('#import-clear-button').hidden = !canEdit;
       $('#template-button').hidden = !canEdit;
-      $('#export-button').hidden = user.role !== 'admin';
-      $('#export-filtered-button').hidden = user.role !== 'admin';
-      $('#legacy-export-button').hidden = user.role !== 'admin' || !state.legacyRecordsAvailable;
-      $('#audit-tab').hidden = user.role !== 'admin';
-      $('#account-conflicts-tab').hidden = user.role !== 'admin';
+      $('#export-button').hidden = !canManageApp(user);
+      $('#export-filtered-button').hidden = !canManageApp(user);
+      $('#legacy-export-button').hidden = !canManageApp(user) || !state.legacyRecordsAvailable;
+      $('#audit-tab').hidden = !canManageApp(user);
+      $('#account-conflicts-tab').hidden = !canManageApp(user);
       $('#client-prep-tab').hidden = !['admin', 'editor'].includes(user.role);
-      $('#catalog-builder-panel').hidden = user.role !== 'admin';
-      $('#client-inquiries-panel').hidden = user.role !== 'admin';
+      $('#catalog-builder-panel').hidden = !canManageApp(user);
+      $('#client-inquiries-panel').hidden = !canManageApp(user);
       $('#import-followers-only-option').hidden = !canEdit;
       $('#add-button').hidden = !canEdit;
       $('#dashboard-add-button').hidden = !canEdit;
       $('#empty-add-button').hidden = !canEdit;
       $('#users-button').hidden = user.role !== 'admin';
-      $('#audit-tab').hidden = user.role !== 'admin';
-      $('#account-conflicts-tab').hidden = user.role !== 'admin';
-      $('#backup-panel').hidden = user.role !== 'admin';
-      if (user.role === 'admin') void loadBackupStatus();
+      $('#audit-tab').hidden = !canManageApp(user);
+      $('#account-conflicts-tab').hidden = !canManageApp(user);
+      $('#backup-panel').hidden = !canManageApp(user);
+      if (canManageApp(user)) void loadBackupStatus();
       activateSection('dashboard', false);
     }
 
@@ -3411,7 +3415,7 @@
                   ${noteIndicator}
                 </div>
               </div>
-              ${canEdit ? `<div class="row-actions"><button class="button button-secondary" type="button" data-action="status-history" data-id="${escapeHTML(record.id)}">${escapeHTML(text('عرض سجل الحالة'))}</button><button class="button button-secondary" type="button" data-action="lookup-edit" data-id="${escapeHTML(record.id)}">${escapeHTML(text('تعديل البيانات'))}</button><button class="button button-primary" type="button" data-action="lookup-update-followers" data-focus-field="${escapeHTML(mainFollowerField)}" data-id="${escapeHTML(record.id)}">${escapeHTML(text('تحديث المتابعين'))}</button>${state.user?.role === 'admin' ? `<button class="button button-danger" type="button" data-action="delete" data-id="${escapeHTML(record.id)}">${escapeHTML(text('حذف'))}</button>` : ''}</div>` : ''}
+              ${canEdit ? `<div class="row-actions"><button class="button button-secondary" type="button" data-action="status-history" data-id="${escapeHTML(record.id)}">${escapeHTML(text('عرض سجل الحالة'))}</button><button class="button button-secondary" type="button" data-action="lookup-edit" data-id="${escapeHTML(record.id)}">${escapeHTML(text('تعديل البيانات'))}</button><button class="button button-primary" type="button" data-action="lookup-update-followers" data-focus-field="${escapeHTML(mainFollowerField)}" data-id="${escapeHTML(record.id)}">${escapeHTML(text('تحديث المتابعين'))}</button>${canManageApp() ? `<button class="button button-danger" type="button" data-action="delete" data-id="${escapeHTML(record.id)}">${escapeHTML(text('حذف'))}</button>` : ''}</div>` : ''}
             </div>
             <div class="lookup-social-stats">
               ${socialProfiles.map((profile) => `
@@ -3452,8 +3456,8 @@
       $('#database-selection-count').textContent = state.language === 'en'
         ? `${new Intl.NumberFormat('en').format(selectedIds.size)} selected`
         : `${new Intl.NumberFormat('ar').format(selectedIds.size)} محدد`;
-      $('#database-export-selected').hidden = !['admin', 'editor'].includes(state.user?.role);
-      $('#database-archive-selected').hidden = state.user?.role !== 'admin';
+      $('#database-export-selected').hidden = !canManageApp();
+      $('#database-archive-selected').hidden = !canManageApp();
       $('#database-archive-selected').disabled = ![...selectedIds].some((id) => !state.databaseSelectedArchivedIds.has(id));
       $('#database-select-page').disabled = state.records.length === 0;
     }
@@ -3561,8 +3565,8 @@
       state.noteCounts = new Map(Object.entries(response.noteCounts || {}).map(([id, count]) => [id, Number(count)]));
       state.notePreviews = new Map(Object.entries(response.notePreviews || {}));
       state.statusPreviews = new Map(Object.entries(response.statusPreviews || {}));
-      $('#influencer-status-filter option[value="Archived"]').hidden = state.user?.role !== 'admin';
-      if (state.user?.role !== 'admin' && $('#influencer-status-filter').value === 'Archived') {
+      $('#influencer-status-filter option[value="Archived"]').hidden = !canManageApp();
+      if (!canManageApp() && $('#influencer-status-filter').value === 'Archived') {
         $('#influencer-status-filter').value = '';
       }
       state.records = response.rows;
@@ -3624,7 +3628,7 @@
           `<div class="person"><span class="avatar profile-avatar">${profileAvatarContent(record)}</span><div><div class="person-name-row"><div class="person-name">${escapeHTML(record.Name || text('اسم غير مسجل'))}</div><span class="record-trust-badges">${influencerTrustBadges(record)}</span></div><div>${influencerStatusPill(record)}${isArchived ? ` <span class="workflow-pill" data-status="archived">${escapeHTML(text('مؤرشف'))}</span>` : ''}</div>${statusPreview?.reason ? `<small class="inactive-reason-preview">${escapeHTML(text('سبب تغيير الحالة'))}: ${escapeHTML(statusPreview.reason)}</small>` : ''}${noteIndicator}</div></div>`,
           accountSummary,
           highestTier ? `<span class="type-pill database-tier">${escapeHTML(text('الفئة الأعلى'))}: ${escapeHTML(text(highestTier))}</span>` : `<span class="muted">—</span>`,
-          `<div class="database-details-cell">${detailDisclosure}${canEdit ? `<div class="row-actions">${isArchived ? `${state.user?.role === 'admin' ? `<button class="button button-secondary" type="button" data-action="restore" data-id="${escapeHTML(record.id)}">${escapeHTML(text('استعادة'))}</button>` : ''}` : `<button class="icon-button" type="button" data-action="edit" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('تعديل'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('تعديل'))}</button><button class="icon-button" type="button" data-action="refresh-followers" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('تحديث متابعين'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('تحديث'))}</button>${state.user?.role === 'admin' ? `<button class="button button-danger" type="button" data-action="delete" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('حذف'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('حذف'))}</button>` : ''}`}<button class="button button-secondary" type="button" data-action="status-history" data-id="${escapeHTML(record.id)}">${escapeHTML(text('عرض سجل الحالة'))}</button></div>` : ''}</div>`
+          `<div class="database-details-cell">${detailDisclosure}${canEdit ? `<div class="row-actions">${isArchived ? `${canManageApp() ? `<button class="button button-secondary" type="button" data-action="restore" data-id="${escapeHTML(record.id)}">${escapeHTML(text('استعادة'))}</button>` : ''}` : `<button class="icon-button" type="button" data-action="edit" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('تعديل'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('تعديل'))}</button><button class="icon-button" type="button" data-action="refresh-followers" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('تحديث متابعين'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('تحديث'))}</button>${canManageApp() ? `<button class="button button-danger" type="button" data-action="delete" data-id="${escapeHTML(record.id)}" aria-label="${escapeHTML(text('حذف'))} ${escapeHTML(record.Name || text('المؤثر'))}">${escapeHTML(text('حذف'))}</button>` : ''}`}<button class="button button-secondary" type="button" data-action="status-history" data-id="${escapeHTML(record.id)}">${escapeHTML(text('عرض سجل الحالة'))}</button></div>` : ''}</div>`
         ];
         cells.forEach((content, index) => {
           const cell = document.createElement('td');
@@ -3963,7 +3967,7 @@
       }
       state.editingId = record?.id || null;
       $('#dialog-title').textContent = text(record ? 'تعديل بيانات المؤثر' : 'إضافة مؤثر');
-      $('#delete-button').hidden = !record || state.user?.role !== 'admin';
+      $('#delete-button').hidden = !record || !canManageApp();
       renderForm(record || {});
       $('#editor-dialog').showModal();
       requestAnimationFrame(() => {
@@ -4045,7 +4049,7 @@
       return Number.isNaN(date.getTime()) ? String(value || '') : date.toLocaleString(state.language === 'en' ? 'en' : 'ar');
     }
     async function deleteRecord(record) {
-      if (!record || state.user?.role !== 'admin' || state.pendingArchiveRecord || state.pendingArchiveIds) return;
+      if (!record || !canManageApp() || state.pendingArchiveRecord || state.pendingArchiveIds) return;
       state.pendingArchiveRecord = record;
       state.pendingArchiveIds = null;
       $('#delete-confirm-title').textContent = text('حذف المؤثر');
@@ -4054,7 +4058,7 @@
       $('#cancel-delete-confirm').focus();
     }
     function confirmArchiveSelected() {
-      if (state.user?.role !== 'admin' || !state.databaseSelectedIds.size || state.pendingArchiveRecord || state.pendingArchiveIds) return;
+      if (!canManageApp() || !state.databaseSelectedIds.size || state.pendingArchiveRecord || state.pendingArchiveIds) return;
       const ids = [...state.databaseSelectedIds].filter((id) => !state.databaseSelectedArchivedIds.has(id));
       if (!ids.length) {
         showToast(text('لا توجد سجلات نشطة محددة للأرشفة.'));
@@ -4076,7 +4080,7 @@
       state.pendingArchiveIds = null;
     }
     async function restoreRecord(record) {
-      if (!record || state.user?.role !== 'admin' || state.pendingStatusChange || state.pendingRestoreRecord) return;
+      if (!record || !canManageApp() || state.pendingStatusChange || state.pendingRestoreRecord) return;
       state.pendingRestoreRecord = record;
       state.pendingStatusChange = { record, status: 'Active', reason: '' };
       $('#status-confirm-title').textContent = text('تأكيد تغيير الحالة');
@@ -4135,7 +4139,7 @@
         <li><strong>${escapeHTML(formatAuditDate(note.createdAt))}</strong>
           <span>${escapeHTML(note.noteText)}</span>
           <small>${escapeHTML(text('بواسطة'))}: ${escapeHTML(note.createdBy)}${note.updatedAt !== note.createdAt ? ` · ${escapeHTML(text('آخر تعديل'))}: ${escapeHTML(formatAuditDate(note.updatedAt))} (${escapeHTML(note.updatedBy)})` : ''}</small>
-          <div class="row-actions"><button class="button button-secondary" type="button" data-action="edit-note" data-id="${escapeHTML(note.id)}">${escapeHTML(text('تعديل'))}</button>${state.user?.role === 'admin' ? `<button class="button button-danger" type="button" data-action="delete-note" data-id="${escapeHTML(note.id)}">${escapeHTML(text('حذف الملاحظة'))}</button>` : ''}</div>
+          <div class="row-actions"><button class="button button-secondary" type="button" data-action="edit-note" data-id="${escapeHTML(note.id)}">${escapeHTML(text('تعديل'))}</button>${canManageApp() ? `<button class="button button-danger" type="button" data-action="delete-note" data-id="${escapeHTML(note.id)}">${escapeHTML(text('حذف الملاحظة'))}</button>` : ''}</div>
         </li>`).join('') : `<li>${escapeHTML(text('لا توجد ملاحظات بعد.'))}</li>`;
       $('#advertiser-note-audit-list').innerHTML = history.length ? history.map((entry) => `
         <li><strong>${escapeHTML(text(entry.action === 'created' ? 'إضافة' : entry.action === 'updated' ? 'تعديل' : 'حذف'))} · ${escapeHTML(formatAuditDate(entry.changedAt))}</strong>
@@ -4156,7 +4160,7 @@
       catch (error) { showToast(error.message); }
     }
     function requestNoteDelete(noteId) {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       state.pendingNoteDeleteId = noteId;
       const note = $('#advertiser-notes-list').querySelector(`[data-action="delete-note"][data-id="${CSS.escape(noteId)}"]`)?.closest('li');
       const noteText = note?.querySelector('span')?.textContent || '';
@@ -4727,7 +4731,7 @@
     }
 
     async function loadAccountConflicts() {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       const body = $('#account-conflicts-rows');
       const status = $('#account-conflicts-status');
       body.replaceChildren();
@@ -4835,7 +4839,7 @@
     }
 
     async function loadAudit(page = 1) {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       state.auditPage = page;
       const filters = new FormData($('#audit-filter-form'));
       const params = new URLSearchParams(Object.fromEntries(filters));
@@ -5456,7 +5460,7 @@
         acceptedToggle.dataset.id = catalog.id;
         acceptedToggle.textContent = `${text(state.expandedClientCatalogIds.has(catalog.id) ? 'إخفاء القرارات' : 'مراجعة المقبولين والمرفوضين')} (${acceptedRecords.length} / ${rejectedRecords.length})`;
         actions.append(acceptedToggle);
-        if (state.user?.role === 'admin') {
+        if (canManageApp()) {
           const preview = document.createElement('button');
           preview.className = 'button button-secondary';
           preview.type = 'button';
@@ -5615,7 +5619,7 @@
     async function loadClientPreparation() {
       const catalogs = await api('/api/client-catalogs');
       state.clientCatalogs = catalogs.catalogs;
-      if (state.user?.role === 'admin') {
+      if (canManageApp()) {
         const inquiries = await api('/api/client-inquiries');
         state.clientInquiries = inquiries.inquiries;
       } else {
@@ -5697,7 +5701,7 @@
       const cleanUrl = new URL(location.href);
       cleanUrl.searchParams.delete('restore-client-preparation');
       history.replaceState(history.state, '', cleanUrl.href);
-      if (!valid || user.role !== 'admin') {
+      if (!valid || !canManageApp(user)) {
         showToast(text('تعذر استعادة حالة تجهيز العرض؛ يمكنك فتحه من جديد.'));
         return;
       }
@@ -6267,7 +6271,7 @@
           const edit = appendWorkspaceButton(actions, 'تعديل', 'edit-company-video', 'button-secondary'); edit.dataset.videoId = video.id;
           const toggle = appendWorkspaceButton(actions, video.active ? 'تعطيل' : 'تفعيل', 'toggle-company-video', 'button-secondary'); toggle.dataset.videoId = video.id;
           toggle.dataset.active = String(video.active);
-          if (state.user?.role === 'admin') {
+          if (canManageApp()) {
             const remove = appendWorkspaceButton(actions, 'حذف', 'delete-company-video', 'button-danger'); remove.dataset.videoId = video.id;
           }
           content.append(actions);
@@ -6372,7 +6376,7 @@
           actions.className = 'campaign-workspace-controls';
           const edit = appendWorkspaceButton(actions, 'تعديل فيديو التغطية', 'edit-coverage', 'button-secondary');
           edit.dataset.coverageId = video.id;
-          if (state.user?.role === 'admin') {
+          if (canManageApp()) {
             const remove = appendWorkspaceButton(actions, 'حذف فيديو التغطية', 'delete-coverage', 'button-danger');
             remove.dataset.coverageId = video.id;
           }
@@ -6842,7 +6846,7 @@
         const toggle = appendWorkspaceButton(actions, item.active ? 'تعطيل الرابط' : 'إعادة التفعيل', 'toggle-presentation', 'button-secondary'); toggle.dataset.active = String(item.active);
         const reissue = appendWorkspaceButton(actions, 'إصدار رابط جديد', 'reissue-presentation', 'button-secondary');
         appendWorkspaceButton(actions, 'تعديل الرابط', 'edit-presentation', 'button-secondary');
-        if (state.user?.role === 'admin') appendWorkspaceButton(actions, 'حذف العرض', 'delete-presentation', 'button-danger');
+        if (canManageApp()) appendWorkspaceButton(actions, 'حذف العرض', 'delete-presentation', 'button-danger');
         card.append(actions); container.append(card);
       });
     }
@@ -7007,7 +7011,7 @@
           coverage.disabled = !['admin', 'editor'].includes(state.user?.role);
           [['pending', 'لم يتم بعد'], ['completed', 'تمت'], ['not_completed', 'لم تتم']].forEach(([value, label]) => coverage.add(new Option(text(label), value, false, target.coverageStatus === value)));
           row.append(coverage);
-          if (executionType === 'visit' && campaign.qrEnabled && state.user?.role === 'admin') {
+          if (executionType === 'visit' && campaign.qrEnabled && canManageApp()) {
             const qrTools = document.createElement('div');
             qrTools.className = 'campaign-qr-actions';
             const download = document.createElement('button');
@@ -7051,7 +7055,7 @@
           edit.textContent = text('تعديل');
           actions.append(edit);
         }
-        if (state.user?.role === 'admin') {
+        if (canManageApp()) {
           const remove = document.createElement('button');
           remove.className = 'button button-danger';
           remove.type = 'button';
@@ -7379,7 +7383,7 @@
         editCampaign(campaign);
         return;
       }
-      if (button.dataset.action === 'delete-campaign' && state.user?.role === 'admin') {
+      if (button.dataset.action === 'delete-campaign' && canManageApp()) {
         if (!confirm(text('هل تريد حذف هذا الكامبين؟'))) return;
         try {
           await api(`/api/campaigns/${encodeURIComponent(campaign.id)}`, { method: 'DELETE' });
@@ -7539,7 +7543,7 @@
         const presentationId = presentationCard?.dataset.presentationId;
         if (!presentationId) return;
         if (button.dataset.action === 'delete-presentation') {
-          if (state.user?.role !== 'admin' || !confirm(text('حذف العرض نهائيًا؟ لن تتأثر مكتبة الفيديوهات أو ملفات المؤثرين.'))) return;
+          if (!canManageApp() || !confirm(text('حذف العرض نهائيًا؟ لن تتأثر مكتبة الفيديوهات أو ملفات المؤثرين.'))) return;
           await api(`/api/campaigns/${campaignId}/presentations/${presentationId}`, { method: 'DELETE' });
           await refreshPresentationList(workspace, campaignId);
           showToast(text('تم حذف عرض العميل.'));
@@ -7773,7 +7777,7 @@
     });
 
     async function renderClientPreparation() {
-      if (state.user?.role === 'admin') {
+      if (canManageApp()) {
         const filters = await loadFilterOptions();
         await loadCompanyWorkVideos();
         const fillOptions = (selector, values, placeholder) => {
@@ -7789,7 +7793,7 @@
         await renderClientCandidates();
       }
       renderClientCatalogs();
-      if (state.user?.role === 'admin') renderClientInquiries();
+      if (canManageApp()) renderClientInquiries();
     }
 
     async function handleClientCatalogAction(event) {
@@ -7799,7 +7803,7 @@
         await copyClientLink(state.latestClientLink);
         return;
       }
-      if (!['admin', 'editor'].includes(state.user?.role)) return;
+      if (!canManageApp()) return;
       const catalog = state.clientCatalogs.find((item) => item.id === button.dataset.id);
       if (!catalog) return;
       try {
@@ -7812,7 +7816,7 @@
           const result = await api(`/api/influencers/${encodeURIComponent(button.dataset.influencerId)}`);
           await openEditor(result.record);
         } else if (button.dataset.action === 'add-catalog-influencers') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           selectCatalogForEditing(catalog.id);
         } else if (button.dataset.action === 'toggle-accepted-names') {
           if (state.expandedClientCatalogIds.has(catalog.id)) state.expandedClientCatalogIds.delete(catalog.id);
@@ -7839,32 +7843,32 @@
             window.prompt(text('تعذر النسخ تلقائيًا؛ انسخ الحسابات من النافذة.'), lines.join('\n'));
           }
         } else if (button.dataset.action === 'renew-catalog-link') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           if (!confirm(text('هل تريد تجديد الرابط؟ سيتوقف الرابط السابق فورًا.'))) return;
           const result = await api(`/api/client-catalogs/${encodeURIComponent(catalog.id)}/link`, { method: 'POST' });
           showGeneratedClientLink(result.url);
           await copyClientLink(state.latestClientLink);
           showToast(text('تم نسخ رابط العرض الجديد. الرابط السابق لم يعد صالحًا.'));
         } else if (button.dataset.action === 'toggle-catalog') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           await api(`/api/client-catalogs/${encodeURIComponent(catalog.id)}`, { method: 'PATCH', body: { active: !catalog.active } });
           await loadClientPreparation();
           showToast(text(catalog.active ? 'تم إيقاف رابط العميل.' : 'تم تفعيل رابط العميل.'));
          } else if (button.dataset.action === 'rename-offer') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           const offerName = window.prompt('اسم العرض:', catalog.offerName || catalog.companyName);
           if (offerName === null) return;
           await api(`/api/client-catalogs/${encodeURIComponent(catalog.id)}`, { method: 'PATCH', body: { offerName } });
           await loadClientPreparation();
           showToast('تم تحديث اسم العرض.');
          } else if (button.dataset.action === 'toggle-offer-status') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           const offerStatus = catalog.offerStatus === 'published' ? 'draft' : 'published';
           await api(`/api/client-catalogs/${encodeURIComponent(catalog.id)}`, { method: 'PATCH', body: { offerStatus } });
           await loadClientPreparation();
           showToast(offerStatus === 'published' ? 'تم نشر العرض.' : 'تم تحويل العرض إلى مسودة.');
         } else if (button.dataset.action === 'delete-catalog') {
-          if (state.user.role !== 'admin') return;
+          if (!canManageApp(state.user)) return;
           if (!confirm(text('هل أنت متأكد من حذف هذا العرض وكل طلباته؟'))) return;
           await api(`/api/client-catalogs/${encodeURIComponent(catalog.id)}`, { method: 'DELETE' });
           await loadClientPreparation();
@@ -7882,8 +7886,8 @@
       const clientPrepActive = sectionName === 'client-prep' && ['admin', 'editor'].includes(state.user?.role);
       const influencerPhotosActive = sectionName === 'influencer-photos' && ['admin', 'editor'].includes(state.user?.role);
       const companyWorkVideosActive = sectionName === 'company-work-videos';
-      const auditActive = sectionName === 'audit' && state.user?.role === 'admin';
-      const accountConflictsActive = sectionName === 'account-conflicts' && state.user?.role === 'admin';
+      const auditActive = sectionName === 'audit' && canManageApp();
+      const accountConflictsActive = sectionName === 'account-conflicts' && canManageApp();
       const aboutActive = sectionName === 'about';
       if (!campaignsActive && !dashboardActive && !databaseActive && !lookupActive && !clientPrepActive && !influencerPhotosActive && !companyWorkVideosActive && !coverageActive && !auditActive && !accountConflictsActive && !aboutActive) return;
       if (!coverageActive && $('#coverage-tab').getAttribute('aria-selected') === 'true') {
@@ -8531,7 +8535,7 @@
           $('#coverage-cancel').hidden = false;
           addYoutubePreview($('#coverage-preview'), video.videoId, video.title || video.description);
           $('#coverage-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (button.dataset.action === 'delete-coverage' && state.user?.role === 'admin') {
+        } else if (button.dataset.action === 'delete-coverage' && canManageApp()) {
           if (!confirm(text('هل تريد حذف هذا الفيديو من مكتبة التغطية؟'))) return;
           await api(`/api/coverage/${encodeURIComponent(video.id)}`, { method: 'DELETE' });
           await loadCoverage();
@@ -8580,7 +8584,7 @@
           });
           await loadCompanyWorkVideos();
           showToast(text('تم تحديث حالة الفيديو.'));
-        } else if (button.dataset.action === 'delete-company-video' && state.user?.role === 'admin') {
+        } else if (button.dataset.action === 'delete-company-video' && canManageApp()) {
           if (!confirm(text('هل تريد حذف هذا الفيديو من المكتبة؟ سيُزال من اختيارات العروض المرتبطة به.'))) return;
           await api(`/api/company-work-videos/${video.id}`, { method: 'DELETE' });
           await loadCompanyWorkVideos();
@@ -8589,7 +8593,7 @@
       } catch (error) { showToast(error.message); }
     });
     $('#legacy-export-button').addEventListener('click', async () => {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       const records = loadLegacyRecords();
       if (!records.length) return;
       try {
@@ -8782,7 +8786,7 @@
       }
     });
     $('#confirm-note-delete').addEventListener('click', async () => {
-      if (!state.pendingNoteDeleteId || state.user?.role !== 'admin') return;
+      if (!state.pendingNoteDeleteId || !canManageApp()) return;
       const noteId = state.pendingNoteDeleteId;
       $('#confirm-note-delete').disabled = true;
       try {
@@ -8933,7 +8937,7 @@
     });
     $('#catalog-create-form').addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       if (!state.clientSelectedIds.size) {
         showToast(text('اختر مؤثرًا واحدًا على الأقل.'));
         return;
@@ -8985,7 +8989,7 @@
       } catch (error) { showToast(error.message); }
     });
     $('#catalog-expiry-save').addEventListener('click', async () => {
-      if (!state.editingCatalogId || state.user?.role !== 'admin') return;
+      if (!state.editingCatalogId || !canManageApp()) return;
       const button = $('#catalog-expiry-save');
       button.disabled = true;
       try {
@@ -9009,7 +9013,7 @@
       renderCatalogWorkVideoSelection(selectedIds);
     });
     $('#catalog-work-save').addEventListener('click', async () => {
-      if (!state.editingCatalogId || state.user?.role !== 'admin') return;
+      if (!state.editingCatalogId || !canManageApp()) return;
       const form = $('#catalog-create-form');
       const workVideoIds = [...form.querySelectorAll('input[name="workVideoIds"]:checked')].map((checkbox) => checkbox.value);
       try {
@@ -9158,7 +9162,7 @@
       void renderRows();
     });
     $('#backup-now-button').addEventListener('click', async () => {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       const button = $('#backup-now-button');
       button.disabled = true;
       $('#backup-status').textContent = text('جارٍ إنشاء النسخة الاحتياطية…');
@@ -9175,7 +9179,7 @@
       }
     });
     $('#influencer-excel-now-button').addEventListener('click', async () => {
-      if (state.user?.role !== 'admin') return;
+      if (!canManageApp()) return;
       const button = $('#influencer-excel-now-button');
       button.disabled = true;
       $('#influencer-excel-status').textContent = text('جارٍ تحديث ملف Excel والتحقق منه…');
@@ -9192,7 +9196,7 @@
       }
     });
     setInterval(() => {
-      if (state.user?.role === 'admin' && !$('#backup-panel').hidden) void loadBackupStatus();
+      if (canManageApp() && !$('#backup-panel').hidden) void loadBackupStatus();
     }, 60 * 1000);
     $('#influencer-rows').addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');
@@ -9200,11 +9204,11 @@
       const record = state.recordsById.get(button.dataset.id) || state.records.find((item) => item.id === button.dataset.id);
       if (!record) return;
       if (button.dataset.action === 'delete') {
-        if (state.user?.role === 'admin') deleteRecord(record);
+        if (canManageApp()) deleteRecord(record);
         return;
       }
       if (button.dataset.action === 'restore') {
-        if (state.user?.role === 'admin') void restoreRecord(record);
+        if (canManageApp()) void restoreRecord(record);
         return;
       }
       if (button.dataset.action === 'advertiser-notes') {
@@ -9229,7 +9233,7 @@
       const record = state.recordsById.get(button.dataset.id) || state.records.find((item) => item.id === button.dataset.id);
       if (!record) return;
       if (button.dataset.action === 'delete') {
-        if (state.user?.role === 'admin') deleteRecord(record);
+        if (canManageApp()) deleteRecord(record);
         return;
       }
       if (button.dataset.action === 'advertiser-notes') {

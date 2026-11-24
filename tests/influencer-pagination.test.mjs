@@ -175,6 +175,10 @@ async function login(username, password) {
 
 const editorPassword = 'Editor-test-password-2026!';
 const viewerPassword = 'Viewer-test-password-2026!';
+const editorExportConfirmation = {
+  confirmationUsername: 'pagination-editor',
+  confirmationPassword: editorPassword
+};
 await api('/api/users', {
   method: 'POST',
   body: { username: 'pagination-editor', password: editorPassword, role: 'editor' }
@@ -600,7 +604,7 @@ test('server-side pagination searches, filters, and selects the complete growing
     headers: { cookie: editorCookie, 'content-type': 'application/json' },
     body: JSON.stringify({ thresholds: [500, 5000, 25000, 75000] })
   });
-  assert.equal(editorTierSettings.status, 403);
+  assert.equal(editorTierSettings.status, 409);
   const viewerTierSettings = await fetch(`${baseUrl}/api/settings/follower-tiers`, {
     method: 'PUT',
     headers: { cookie: viewerCookie, 'content-type': 'application/json' },
@@ -822,8 +826,9 @@ test('influencer saves normalize a country dial code and compute independent acc
   assert.equal(updated.record['Overall Influencer Type'], 'Mega');
 });
 
-test('exports are admin-only, require fresh confirmation, and viewers can still browse', { concurrency: false }, async () => {
+test('exports are available to editors and admins with fresh confirmation; viewers can still browse', { concurrency: false }, async () => {
   for (const cookie of [sessionCookie, editorCookie]) {
+    const confirmation = cookie === sessionCookie ? exportConfirmation : editorExportConfirmation;
     assert.equal((await api('/api/influencers?q=test_creator_125', { cookie })).total, 1);
     assert.equal((await api('/api/influencers/by-ids', {
       method: 'POST',
@@ -837,29 +842,33 @@ test('exports are admin-only, require fresh confirmation, and viewers can still 
       const response = await fetch(`${baseUrl}${path}`, {
         method: 'POST',
         headers: { cookie, 'content-type': 'application/json' },
-        body: JSON.stringify(exportConfirmation)
+        body: JSON.stringify(confirmation)
       });
-      assert.equal(response.status, cookie === sessionCookie ? 404 : 403, `${path} export access`);
+      assert.equal(response.status, 404, `${path} export access`);
     }
   }
 
-  for (const [path, search] of [
-    ['/api/influencers/export?q=test_creator_125', true],
-    ['/api/export', false]
+  for (const [cookie, confirmation] of [
+    [sessionCookie, exportConfirmation], [editorCookie, editorExportConfirmation]
   ]) {
-    const response = await fetch(`${baseUrl}${path}`, {
-      method: 'POST',
-      headers: { cookie: sessionCookie, 'content-type': 'application/json' },
-      body: JSON.stringify(exportConfirmation)
-    });
-    assert.equal(response.status, 200);
-    const result = await response.json();
-    if (search) assert.equal(result.rows.length, 1);
-    else {
-      const currentDb = new DatabaseSync(databasePath, { readOnly: true });
-      const expectedRows = Number(currentDb.prepare('SELECT COUNT(*) AS count FROM influencers WHERE archived_at IS NULL').get().count);
-      currentDb.close();
-      assert.equal(result.rows.length, expectedRows);
+    for (const [path, search] of [
+      ['/api/influencers/export?q=test_creator_125', true],
+      ['/api/export', false]
+    ]) {
+      const response = await fetch(`${baseUrl}${path}`, {
+        method: 'POST',
+        headers: { cookie, 'content-type': 'application/json' },
+        body: JSON.stringify(confirmation)
+      });
+      assert.equal(response.status, 200);
+      const result = await response.json();
+      if (search) assert.equal(result.rows.length, 1);
+      else {
+        const currentDb = new DatabaseSync(databasePath, { readOnly: true });
+        const expectedRows = Number(currentDb.prepare('SELECT COUNT(*) AS count FROM influencers WHERE archived_at IS NULL').get().count);
+        currentDb.close();
+        assert.equal(result.rows.length, expectedRows);
+      }
     }
   }
   const missingConfirmation = await fetch(`${baseUrl}/api/export`, {
@@ -912,9 +921,10 @@ test('scheduled Excel backup is full, stable, and admin-only when run manually',
 
   const editorRequest = await fetch(`${baseUrl}/api/backups/influencers/create`, {
     method: 'POST',
-    headers: { cookie: editorCookie }
+    headers: { cookie: editorCookie, 'content-type': 'application/json' },
+    body: JSON.stringify(editorExportConfirmation)
   });
-  assert.equal(editorRequest.status, 403);
+  assert.equal(editorRequest.status, 200);
   const viewerRequest = await fetch(`${baseUrl}/api/backups/influencers/create`, {
     method: 'POST',
     headers: { cookie: viewerCookie }
@@ -1126,8 +1136,7 @@ test('inactive status, private advertiser-note history, and confirmed archive pr
   const editorDelete = await fetch(`${baseUrl}/api/influencers/${influencerId}/advertiser-notes/${firstNote.note.id}`, {
     method: 'DELETE', headers: { cookie: editorCookie }
   });
-  assert.equal(editorDelete.status, 403);
-  await api(`/api/influencers/${influencerId}/advertiser-notes/${firstNote.note.id}`, { method: 'DELETE' });
+  assert.equal(editorDelete.status, 200);
   const notesAfterDelete = await api(`/api/influencers/${influencerId}/advertiser-notes`);
   assert.deepEqual(notesAfterDelete.notes.map((note) => note.id), [secondNote.note.id]);
   assert.deepEqual(notesAfterDelete.history.map((entry) => entry.action), ['deleted', 'updated', 'created', 'created']);
@@ -1178,12 +1187,24 @@ test('inactive status, private advertiser-note history, and confirmed archive pr
   assert.equal(archiveAudit.entity_label, archived.record.Name);
   assert.equal(archiveAudit.actor_username, 'pagination-test');
   archiveAuditDb.close();
-  const editorArchive = await fetch(`${baseUrl}/api/influencers/${archived.record.id}`, {
+  const editorArchivable = await api('/api/influencers', {
+    method: 'POST', cookie: editorCookie,
+    body: { Name: 'Editor archive restore test', Main_Username: 'editor_archive_restore_test' }
+  });
+  const editorArchive = await fetch(`${baseUrl}/api/influencers/${editorArchivable.record.id}`, {
     method: 'DELETE',
     headers: { cookie: editorCookie, 'content-type': 'application/json' },
     body: JSON.stringify({})
   });
-  assert.equal(editorArchive.status, 403);
+  assert.equal(editorArchive.status, 200);
+  const editorRestored = await api(`/api/influencers/${editorArchivable.record.id}/restore`, {
+    method: 'POST', cookie: editorCookie
+  });
+  assert.equal(editorRestored.record['Influencer Status'], 'Active');
+  const editorCleanupArchive = await fetch(`${baseUrl}/api/influencers/${editorArchivable.record.id}`, {
+    method: 'DELETE', headers: { cookie: editorCookie, 'content-type': 'application/json' }, body: JSON.stringify({})
+  });
+  assert.equal(editorCleanupArchive.status, 200);
   assert.equal((await api('/api/influencers?q=archive_linked_test')).total, 0);
   const archivedPage = await api('/api/influencers?status=Archived&q=archive_linked_test');
   assert.equal(archivedPage.total, 1);

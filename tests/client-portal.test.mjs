@@ -701,10 +701,14 @@ test('campaign internal workspace files, operations, and scoped client presentat
     cookie: editorCookie, method: 'PATCH', body: { title: 'Fikratak campaign sample one edited' }
   });
   assert.equal(editorLibraryEdit.video.title, 'Fikratak campaign sample one edited');
-  const editorLibraryDelete = await call(`/api/company-work-videos/${libraryVideoTwo.id}`, {
+  const deletableLibraryVideo = (await mustCall('/api/company-work-videos', {
+    method: 'POST', cookie: editorCookie,
+    body: { url: 'https://youtu.be/QAtest00008', title: 'Temporary editor-delete sample' }
+  })).video;
+  const editorLibraryDelete = await call(`/api/company-work-videos/${deletableLibraryVideo.id}`, {
     cookie: editorCookie, method: 'DELETE'
   });
-  assert.equal(editorLibraryDelete.response.status, 403);
+  assert.equal(editorLibraryDelete.response.status, 200);
 
   const created = await mustCall(`/api/campaigns/${visitCampaign.id}/presentations`, { method: 'POST', body: {
     brandId: 'fkretk',
@@ -901,8 +905,7 @@ test('campaign internal workspace files, operations, and scoped client presentat
   const forbiddenPresentationDelete = await call(`/api/campaigns/${visitCampaign.id}/presentations/${noVideoPresentation.id}`, {
     method: 'DELETE', cookie: editorCookie
   });
-  assert.equal(forbiddenPresentationDelete.response.status, 403);
-  await mustCall(`/api/campaigns/${visitCampaign.id}/presentations/${noVideoPresentation.id}`, { method: 'DELETE' });
+  assert.equal(forbiddenPresentationDelete.response.status, 200);
   assert.equal((await fetch(`${baseUrl}/api/campaign-presentations/${noVideoPresentation.token}`)).status, 404);
   const presentationsAfterDelete = await mustCall(`/api/campaigns/${visitCampaign.id}/presentations`);
   assert.equal(presentationsAfterDelete.presentations.some(item => item.id === noVideoPresentation.id), false);
@@ -1108,8 +1111,7 @@ test('visit-only presentations hide undated visits and amounts and scope client 
   const editorDelete = await call(`/api/campaigns/${campaign.id}/presentations/${created.id}`, {
     cookie: editorCookie, method: 'DELETE'
   });
-  assert.equal(editorDelete.response.status, 403);
-  await mustCall(`/api/campaigns/${campaign.id}/presentations/${created.id}`, { method: 'DELETE' });
+  assert.equal(editorDelete.response.status, 200);
   assert.equal((await fetch(`${baseUrl}/api/campaign-presentations/${created.token}/client-logo`)).status, 404);
   const logoDb = new DatabaseSync(databasePath, { readOnly: true });
   assert.equal(logoDb.prepare('SELECT COUNT(*) AS count FROM campaign_presentation_client_logos WHERE presentation_id = ?').get(created.id).count, 0);
@@ -1191,16 +1193,37 @@ test('accept, reject, and revert update only that client decision and preserve a
   assert.equal(invalid.response.status, 400);
 });
 
-test('admin/editor/viewer permissions protect account management and shipping/visit edits', async () => {
+test('editor mirrors admin operations except system-user administration while viewers remain read-only', async () => {
   const accountListForEditor = await mustCall('/api/client-accounts', { cookie: editorCookie });
   assert.equal(accountListForEditor.accounts.length, 2);
   const viewerList = await call('/api/client-accounts', { cookie: viewerCookie });
   assert.equal(viewerList.response.status, 403);
-  const editorCreate = await call('/api/client-accounts', {
+  const editorCreate = await mustCall('/api/client-accounts', {
     method: 'POST', cookie: editorCookie,
-    body: { username: 'not-allowed', clientName: 'No', companyName: 'No', password: 'Password-2026-long!', campaignIds: [] }
+    body: {
+      username: 'editor-created-client', email: 'editor.created@example.test',
+      clientName: 'Editor Created Client', companyName: 'Editor Created Company',
+      password: 'Editor-client-pass-2026!', campaignIds: []
+    }
   });
-  assert.equal(editorCreate.response.status, 403);
+  assert.equal(editorCreate.account.username, 'editor-created-client');
+  assert.equal((await mustCall('/api/audit', { cookie: editorCookie })).page, 1);
+  assert.ok(Array.isArray((await mustCall('/api/account-conflicts', { cookie: editorCookie })).groups));
+  assert.ok((await mustCall('/api/backups', { cookie: editorCookie })).directory);
+  assert.ok(Array.isArray((await mustCall('/api/client-portal-templates', { cookie: editorCookie })).templates));
+
+  const userManagementRequests = [
+    { path: '/api/users', method: 'GET' },
+    { path: '/api/users', method: 'POST', body: { username: 'blocked-editor-user', role: 'viewer', password: 'Blocked-user-pass-2026!' } },
+    { path: `/api/users/${editor.id}`, method: 'PUT', body: { role: 'viewer', password: 'Blocked-user-pass-2026!' } },
+    { path: `/api/users/${editor.id}`, method: 'DELETE' }
+  ];
+  for (const request of userManagementRequests) {
+    assert.equal((await call(request.path, { ...request, cookie: editorCookie })).response.status, 403);
+    assert.equal((await call(request.path, { ...request, cookie: viewerCookie })).response.status, 403);
+    assert.equal((await call(request.path, { ...request, cookie: '' })).response.status, 401);
+  }
+
   const editorVisit = await mustCall(`/api/campaigns/${visitCampaign.id}/targets/${influencerIds[0]}`, {
     method: 'PATCH', cookie: editorCookie,
     body: { visitDate: '2026-10-16', visitTime: '10:45', visitLocation: 'Jeddah studio' }
@@ -1232,6 +1255,29 @@ test('admin/editor/viewer permissions protect account management and shipping/vi
     method: 'PATCH', cookie: viewerCookie, body: { active: false }
   });
   assert.equal(viewerAccountUpdate.response.status, 403);
+  const cleanup = new DatabaseSync(databasePath);
+  cleanup.prepare('DELETE FROM client_accounts WHERE id = ?').run(editorCreate.account.id);
+  cleanup.close();
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const width of [390, 1280]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      await page.goto(baseUrl);
+      await page.locator('#login-username').fill('portal-editor');
+      await page.locator('#login-password').fill('Portal-editor-pass-2026!');
+      await page.locator('#login-form button[type="submit"]').click();
+      await page.locator('#app-shell').waitFor({ state: 'visible' });
+      for (const selector of [
+        '#export-button', '#audit-tab', '#account-conflicts-tab',
+        '#catalog-builder-panel', '#client-inquiries-panel', '#backup-panel'
+      ]) assert.equal(await page.locator(selector).evaluate((element) => !element.hidden), true, `${selector} at ${width}px`);
+      assert.equal(await page.locator('#users-button').evaluate((element) => element.hidden), true, `users button at ${width}px`);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
 });
 
 test('decision audit remains durable when a campaign target is later replaced', async () => {
@@ -1589,10 +1635,13 @@ test('independent client catalogs publish only their selected company work video
     method: 'PATCH', body: { workVideoIds: ['a'.repeat(32)] }
   });
   assert.equal(invalidVideo.response.status, 400);
-  const editorCannotEdit = await call(`/api/client-catalogs/${offer.catalog.id}`, {
+  const editorCanEdit = await mustCall(`/api/client-catalogs/${offer.catalog.id}`, {
     method: 'PATCH', cookie: editorCookie, body: { showCompanyWork: false, workVideoIds: [] }
   });
-  assert.equal(editorCannotEdit.response.status, 403);
+  assert.equal(editorCanEdit.catalog.showCompanyWork, false);
+  await mustCall(`/api/client-catalogs/${offer.catalog.id}`, {
+    method: 'PATCH', body: { showCompanyWork: true, workVideoIds: [selectedIds[2]] }
+  });
 });
 
 test('admin account updates rehash passwords and revoke disabled or changed-password sessions', async () => {
@@ -1616,13 +1665,13 @@ test('admin account updates rehash passwords and revoke disabled or changed-pass
   })).response.status, 401);
 });
 
-test('portal templates, admin preview, and field visibility are enforced and reusable', async () => {
+test('portal templates, editor preview, and field visibility are enforced and reusable', async () => {
   const preview = await mustCall(`/api/client-accounts/${clientOne.id}/preview`);
   assert.equal(preview.portal.template, 'visit-schedule');
   assert.equal(preview.campaigns[0].targets[0].visitBranch, undefined);
   assert.equal('recipientPhone' in preview.campaigns[0].targets[0], false);
-  const editorPreview = await call(`/api/client-accounts/${clientOne.id}/preview`, { cookie: editorCookie });
-  assert.equal(editorPreview.response.status, 403);
+  const editorPreview = await mustCall(`/api/client-accounts/${clientOne.id}/preview`, { cookie: editorCookie });
+  assert.equal(editorPreview.portal.template, 'visit-schedule');
 
   const config = {
     template: 'custom-view', status: 'draft',
@@ -1645,7 +1694,8 @@ test('portal templates, admin preview, and field visibility are enforced and reu
   const forbiddenTemplate = await call('/api/client-portal-templates', {
     method: 'POST', cookie: editorCookie, body: { name: 'Not allowed', config }
   });
-  assert.equal(forbiddenTemplate.response.status, 403);
+  assert.equal(forbiddenTemplate.response.status, 201);
+  assert.equal(forbiddenTemplate.body.template.config.status, 'draft');
 
   const updated = await mustCall(`/api/client-accounts/${clientOne.id}`, {
     method: 'PATCH', body: { portalConfig: config, campaignIds: [visitCampaign.id] }
@@ -3811,9 +3861,7 @@ test('Coverage is an independent video library with role checks and read-only ca
   assert.deepEqual(visitAfter.schedules, visitBefore.schedules);
   assert.deepEqual(visitAfter.targets.map(({ id, coverageStatus, visitDate }) => ({ id, coverageStatus, visitDate })),
     visitBefore.targets.map(({ id, coverageStatus, visitDate }) => ({ id, coverageStatus, visitDate })));
-  const deniedDelete = await call(`/api/coverage/${created.video.id}`, { method: 'DELETE', cookie: currentEditorCookie });
-  assert.equal(deniedDelete.response.status, 403);
-  const deleted = await mustCall(`/api/coverage/${created.video.id}`, { method: 'DELETE', cookie: currentAdminCookie });
+  const deleted = await mustCall(`/api/coverage/${created.video.id}`, { method: 'DELETE', cookie: currentEditorCookie });
   assert.equal(deleted.ok, true);
   const finalCampaign = (await mustCall('/api/campaigns', { cookie: currentAdminCookie })).campaigns.find((campaign) => campaign.id === visitCampaign.id);
   assert.equal(finalCampaign.coverageCount, visitBefore.coverageCount || 0);

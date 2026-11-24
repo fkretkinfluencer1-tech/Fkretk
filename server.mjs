@@ -1952,8 +1952,12 @@ function requireRole(user, allowed) {
   return Boolean(user && allowed.includes(user.role));
 }
 
+function canManageData(user) {
+  return requireRole(user, ['admin', 'editor']);
+}
+
 function requireDataExportRole(user) {
-  return requireRole(user, ['admin']);
+  return canManageData(user);
 }
 
 function getBrandSettings(brandId) {
@@ -1973,17 +1977,17 @@ function getBrandSnapshot(row) {
 }
 
 async function verifySensitiveConfirmation(request, user, body) {
-  if (!requireDataExportRole(user)) return { ok: false, status: 403, error: 'تصدير البيانات متاح للمدير فقط.' };
+  if (!requireDataExportRole(user)) return { ok: false, status: 403, error: 'تصدير البيانات متاح للمدير والمحرر فقط.' };
   const attempt = allowResetAttempt(requestAddress(request), 'sensitive-export', 5, 15 * 60 * 1000);
   if (!attempt.allowed) return { ok: false, status: 429, error: 'تجاوزت عدد محاولات التأكيد. حاول لاحقًا.' };
   const username = normalizeUsername(body?.confirmationUsername);
   const password = typeof body?.confirmationPassword === 'string' ? body.confirmationPassword : '';
   const storedUser = database.prepare(`SELECT id, username, role, active, salt, password_hash
     FROM users WHERE id = ?`).get(user.id);
-  const identityMatches = storedUser?.active && storedUser.role === 'admin'
+  const identityMatches = storedUser?.active && ['admin', 'editor'].includes(storedUser.role)
     && username.toLocaleLowerCase('en-US') === storedUser.username.toLocaleLowerCase('en-US');
   const valid = identityMatches && validateLoginPassword(password) && await checkPassword(password, storedUser);
-  if (!valid) return { ok: false, status: 403, error: 'اسم المدير أو كلمة المرور غير صحيحة.' };
+  if (!valid) return { ok: false, status: 403, error: 'اسم المستخدم أو كلمة المرور غير صحيحة.' };
   resetAttempts.delete(`sensitive-export:${requestAddress(request)}`);
   return { ok: true };
 }
@@ -2879,7 +2883,7 @@ function importPreviewFingerprint(rows, body, user) {
     file: importFileMetadata(body, rows),
     imageArchiveBase64: String(body.imageArchiveBase64 || ''),
     followersOnly: body.followersOnly === true,
-    allowSensitiveChanges: body.allowSensitiveChanges === true && user.role === 'admin'
+    allowSensitiveChanges: body.allowSensitiveChanges === true && canManageData(user)
   })).digest('hex');
 }
 
@@ -7415,7 +7419,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/system-identity' && method === 'PUT') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'تعديل هوية النظام متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تعديل هوية النظام متاح للمدير والمحرر.' }); return; }
     const body = await readJson(request);
     const nameAr = String(body.nameAr || '').trim();
     const nameEn = String(body.nameEn || '').trim();
@@ -7443,7 +7447,7 @@ async function handleApi(request, response, url) {
 
   const brandMatch = pathname.match(/^\/api\/brands\/(fkretk|ryfaq)$/);
   if (brandMatch && method === 'PUT') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'تعديل الهوية التجارية متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تعديل الهوية التجارية متاح للمدير والمحرر.' }); return; }
     const brandId = brandMatch[1];
     const current = getBrandSettings(brandId);
     const body = await readJson(request);
@@ -7471,7 +7475,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/audit' && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'سجل العمليات متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'سجل العمليات متاح للمدير والمحرر.' }); return; }
     const params = url.searchParams;
     const clauses = [];
     const values = [];
@@ -7516,7 +7520,7 @@ async function handleApi(request, response, url) {
 
   const auditEventMatch = pathname.match(/^\/api\/audit\/([a-f0-9]{32})$/);
   if (auditEventMatch && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'تفاصيل سجل العمليات متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تفاصيل سجل العمليات متاحة للمدير والمحرر.' }); return; }
     const row = database.prepare(`SELECT id, actor_username AS username, actor_role AS role,
         action, section, entity_type AS entityType, entity_id AS entityId,
         entity_label AS entityLabel, outcome, http_status AS status,
@@ -7588,8 +7592,8 @@ async function handleApi(request, response, url) {
       return;
     }
     if (videoId && method === 'DELETE') {
-      if (user.role !== 'admin') {
-        json(response, 403, { error: 'حذف فيديوهات مكتبة أعمال فكرتك متاح للمدير فقط.' }); return;
+      if (!canManageData(user)) {
+        json(response, 403, { error: 'حذف فيديوهات مكتبة أعمال فكرتك متاح للمدير والمحرر.' }); return;
       }
       database.prepare('DELETE FROM company_work_videos WHERE id = ?').run(videoId);
       json(response, 200, { ok: true });
@@ -7668,8 +7672,8 @@ async function handleApi(request, response, url) {
       return;
     }
     if (videoId && method === 'DELETE') {
-      if (user.role !== 'admin') {
-        json(response, 403, { error: 'حذف فيديوهات Coverage متاح للمدير فقط.' }); return;
+      if (!canManageData(user)) {
+        json(response, 403, { error: 'حذف فيديوهات Coverage متاح للمدير والمحرر.' }); return;
       }
       database.prepare('DELETE FROM coverage_videos WHERE id = ?').run(videoId);
       json(response, 200, { ok: true });
@@ -7689,13 +7693,13 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/settings/follower-tiers' && method === 'PUT') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'Forbidden.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'Forbidden.' }); return; }
     json(response, 409, { error: 'Follower tier boundaries are fixed product rules.' });
     return;
   }
 
   if (pathname === '/api/backups' && method === 'GET') {
-    if (!requireRole(user, ['admin'])) { json(response, 403, { error: 'عرض النسخ الاحتياطية متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'عرض النسخ الاحتياطية متاح للمدير والمحرر.' }); return; }
     json(response, 200, {
       ...await getBackupSummary(),
       influencerExcel: await getInfluencerExcelSummary()
@@ -7844,8 +7848,8 @@ async function handleApi(request, response, url) {
       return;
     }
     if (noteId && ['PUT', 'DELETE'].includes(method)) {
-      if (method === 'DELETE' && user.role !== 'admin') {
-        json(response, 403, { error: 'حذف الملاحظات متاح للمدير فقط.' }); return;
+      if (method === 'DELETE' && !canManageData(user)) {
+        json(response, 403, { error: 'حذف الملاحظات متاح للمدير والمحرر.' }); return;
       }
       const existing = database.prepare(`SELECT id, note_text FROM influencer_advertiser_notes
         WHERE id = ? AND influencer_id = ? AND deleted_at IS NULL`).get(noteId, influencerId);
@@ -7885,7 +7889,7 @@ async function handleApi(request, response, url) {
 
   const influencerRelationshipsMatch = pathname.match(/^\/api\/influencers\/([^/]+)\/relationships$/);
   if (influencerRelationshipsMatch && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'مراجعة ارتباطات السجل متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'مراجعة ارتباطات السجل متاحة للمدير والمحرر.' }); return; }
     const id = decodeURIComponent(influencerRelationshipsMatch[1]);
     if (!database.prepare('SELECT 1 FROM influencers WHERE id = ?').get(id)) {
       json(response, 404, { error: 'السجل غير موجود.' }); return;
@@ -7934,7 +7938,7 @@ async function handleApi(request, response, url) {
 
   const interestMatch = pathname.match(/^\/api\/interests\/([a-f0-9]{32})$/);
   if (interestMatch && method === 'PUT') {
-    if (!requireRole(user, ['admin'])) { json(response, 403, { error: 'تعديل اسم اهتمام مركزي متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تعديل اسم اهتمام مركزي متاح للمدير والمحرر.' }); return; }
     const body = await readJson(request);
     const { name, normalizedName } = validateInterestName(body.name);
     const interest = renameInterest(interestMatch[1], name, normalizedName);
@@ -7948,7 +7952,7 @@ async function handleApi(request, response, url) {
       return;
     }
     const body = await readJson(request);
-    const maxIds = user.role === 'admin' ? 5000 : 50;
+    const maxIds = canManageData(user) ? 5000 : 50;
     if (!Array.isArray(body.ids) || body.ids.length > maxIds) {
       json(response, 400, { error: `قائمة المعرّفات غير صالحة أو تتجاوز ${maxIds} سجلًا في الطلب الواحد.` });
       return;
@@ -7962,7 +7966,7 @@ async function handleApi(request, response, url) {
       ? url.searchParams.get('scope')
       : 'database';
     const params = new URLSearchParams(url.searchParams);
-    if (params.get('status') === 'Archived' && user.role !== 'admin') params.set('status', '');
+    if (params.get('status') === 'Archived' && !canManageData(user)) params.set('status', '');
     const result = getInfluencerPage(params, scope, {
       defaultPageSize: scope === 'lookup' ? 20 : 50,
       maxPageSize: scope === 'lookup' ? 50 : 100
@@ -8506,7 +8510,7 @@ async function handleApi(request, response, url) {
       return;
     }
     if (presentationId && method === 'DELETE') {
-      if (user.role !== 'admin') { json(response, 403, { error: 'حذف عروض العملاء متاح للمدير فقط.' }); return; }
+      if (!canManageData(user)) { json(response, 403, { error: 'حذف عروض العملاء متاح للمدير والمحرر.' }); return; }
       database.exec('BEGIN IMMEDIATE');
       try {
         const deleted = database.prepare('DELETE FROM campaign_presentations WHERE id = ? AND campaign_id = ?')
@@ -8830,7 +8834,7 @@ async function handleApi(request, response, url) {
 
   const clientPreviewMatch = pathname.match(/^\/api\/client-accounts\/([a-f0-9]{32})\/preview$/);
   if (clientPreviewMatch && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'معاينة بوابة العميل متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'معاينة بوابة العميل متاحة للمدير والمحرر.' }); return; }
     const account = database.prepare(`SELECT id, username, client_name AS clientName,
       company_name AS companyName, active, portal_config AS portalConfig,
       portal_status AS portalStatus, client_type AS clientType, display_mode AS displayMode
@@ -8842,7 +8846,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/client-portal-templates' && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'قوالب بوابة العملاء متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'قوالب بوابة العملاء متاحة للمدير والمحرر.' }); return; }
     const templates = database.prepare(`SELECT id, name, config_json AS configJson,
       created_at AS createdAt, updated_at AS updatedAt
       FROM client_portal_templates ORDER BY name COLLATE NOCASE`).all().map((template) => ({
@@ -8854,7 +8858,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/client-portal-templates' && method === 'POST') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'حفظ قوالب بوابة العملاء متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'حفظ قوالب بوابة العملاء متاح للمدير والمحرر.' }); return; }
     const body = await readJson(request);
     const name = String(body.name || '').trim();
     if (!name || name.length > 100) { json(response, 400, { error: 'اسم القالب مطلوب وبحد أقصى 100 حرف.' }); return; }
@@ -8874,7 +8878,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/client-accounts' && method === 'POST') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'إنشاء حسابات العملاء متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'إنشاء حسابات العملاء متاح للمدير والمحرر.' }); return; }
     const body = await readJson(request);
     const email = normalizeEmail(body.email);
     const username = normalizeUsername(body.username) || generatedClientUsername(email);
@@ -8961,7 +8965,7 @@ async function handleApi(request, response, url) {
     return;
   }
   if (clientAccountMatch && (method === 'PATCH' || method === 'PUT')) {
-    if (user.role !== 'admin') { json(response, 403, { error: 'إدارة حسابات العملاء متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'إدارة حسابات العملاء متاحة للمدير والمحرر.' }); return; }
     const accountId = clientAccountMatch[1];
     const existing = database.prepare(`SELECT id, active, client_type AS clientType,
       display_mode AS displayMode,
@@ -9348,7 +9352,7 @@ async function handleApi(request, response, url) {
   }
 
   if (campaignMatch && method === 'DELETE') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'حذف الحملات متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'حذف الحملات متاح للمدير والمحرر.' }); return; }
     const result = database.prepare('DELETE FROM campaigns WHERE id = ?').run(campaignMatch[1]);
     if (!result.changes) { json(response, 404, { error: 'الكامبين غير موجود.' }); return; }
     json(response, 200, { ok: true });
@@ -9676,7 +9680,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/import/legacy-account-aliases/preview' && method === 'GET') {
-    if (!requireRole(user, ['admin'])) { json(response, 403, { error: 'معاينة توحيد الحسابات القديمة متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'معاينة توحيد الحسابات القديمة متاحة للمدير والمحرر.' }); return; }
     const records = database.prepare('SELECT id, record_json FROM influencers').all()
       .map((row) => ({ id: row.id, record: JSON.parse(row.record_json || '{}') }));
     const plan = planLegacyAccountAliasNormalization(records);
@@ -9692,7 +9696,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/import/legacy-account-aliases/normalize' && method === 'POST') {
-    if (!requireRole(user, ['admin'])) { json(response, 403, { error: 'توحيد الحسابات القديمة متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'توحيد الحسابات القديمة متاح للمدير والمحرر.' }); return; }
     if (isProduction || process.env.FIKRATAK_ENABLE_ALIAS_NORMALIZATION !== '1') {
       json(response, 403, { error: 'توحيد الحسابات القديمة غير مفعّل في هذا الخادم.' });
       return;
@@ -9804,7 +9808,7 @@ async function handleApi(request, response, url) {
     const hasIdentity = normalized.rows.some(hasImportIdentity);
     const preview = previewProfileImageImport(rows, body.imageArchiveBase64 || '');
     preview.integrity = hasIdentity ? previewInfluencerImport(normalized.rows, {
-      allowSensitiveChanges: body.allowSensitiveChanges === true && user.role === 'admin',
+      allowSensitiveChanges: body.allowSensitiveChanges === true && canManageData(user),
       restoreArchivedMatches: body.restoreArchivedMatches === true,
       includeNameWarnings: true
     }) : {
@@ -10010,7 +10014,7 @@ async function handleApi(request, response, url) {
       return;
     }
     const integrityPreview = previewInfluencerImport(normalized.rows, {
-      allowSensitiveChanges: body.allowSensitiveChanges === true && user.role === 'admin',
+      allowSensitiveChanges: body.allowSensitiveChanges === true && canManageData(user),
       restoreArchivedMatches: body.restoreArchivedMatches === true
     });
     const existingRows = Number(database.prepare('SELECT COUNT(*) AS count FROM influencers').get().count);
@@ -10038,7 +10042,7 @@ async function handleApi(request, response, url) {
     const batchId = randomBytes(16).toString('hex');
     const insert = database.prepare('INSERT INTO influencers (id, record_json, phone_key) VALUES (?, ?, ?)');
     const update = database.prepare('UPDATE influencers SET record_json = ?, phone_key = ? WHERE id = ?');
-    const allowSensitiveChanges = body.allowSensitiveChanges === true && user.role === 'admin';
+    const allowSensitiveChanges = body.allowSensitiveChanges === true && canManageData(user);
     const warnings = [];
     const addHistory = database.prepare(`INSERT INTO influencer_follower_history
       (id, influencer_id, platform, followers_count, previous_count, source, actor_username, recorded_at)
@@ -10305,7 +10309,7 @@ async function handleApi(request, response, url) {
     const batch = database.prepare(`SELECT id, actor_user_id, undo_data_json, undone_at
       FROM import_batches WHERE id = ?`).get(importUndoMatch[1]);
     if (!batch) { json(response, 404, { error: 'دفعة الاستيراد غير موجودة.' }); return; }
-    if (user.role !== 'admin' && batch.actor_user_id !== user.id) {
+    if (!canManageData(user) && batch.actor_user_id !== user.id) {
       json(response, 403, { error: 'يمكن للمحرر التراجع عن دفعاته فقط.' }); return;
     }
     if (batch.undone_at) { json(response, 409, { error: 'تم التراجع عن هذه الدفعة مسبقًا.' }); return; }
@@ -10375,7 +10379,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/account-conflicts' && method === 'GET') {
-    if (!requireRole(user, ['admin'])) { json(response, 403, { error: 'تقرير تعارضات الحسابات متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تقرير تعارضات الحسابات متاح للمدير والمحرر.' }); return; }
     json(response, 200, getAccountConflictReport());
     return;
   }
@@ -10469,7 +10473,7 @@ async function handleApi(request, response, url) {
 
   const catalogInfluencerMatch = pathname.match(/^\/api\/client-catalogs\/([a-f0-9]{32})\/influencers$/);
   if (catalogInfluencerMatch && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'عرض أعضاء القائمة متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'عرض أعضاء القائمة متاح للمدير والمحرر.' }); return; }
     const catalogId = catalogInfluencerMatch[1];
     if (!database.prepare('SELECT id FROM client_catalogs WHERE id = ?').get(catalogId)) {
       json(response, 404, { error: 'عرض العملاء غير موجود.' }); return;
@@ -10485,7 +10489,7 @@ async function handleApi(request, response, url) {
   }
 
   if (catalogInfluencerMatch && method === 'POST') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'إضافة مؤثرين إلى العرض متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'إضافة مؤثرين إلى العرض متاحة للمدير والمحرر.' }); return; }
     const catalogId = catalogInfluencerMatch[1];
     if (!database.prepare('SELECT id FROM client_catalogs WHERE id = ?').get(catalogId)) {
       json(response, 404, { error: 'عرض العملاء غير موجود.' }); return;
@@ -10561,7 +10565,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/client-catalogs' && method === 'POST') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'تجهيز عروض العملاء متاح للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'تجهيز عروض العملاء متاح للمدير والمحرر.' }); return; }
     const body = await readJson(request);
     const clientName = String(body.clientName || '').trim();
     const companyName = String(body.companyName || '').trim();
@@ -10653,7 +10657,7 @@ async function handleApi(request, response, url) {
 
   const clientCatalogMatch = pathname.match(/^\/api\/client-catalogs\/([a-f0-9]{32})(?:\/(link))?$/);
   if (clientCatalogMatch && (method === 'PATCH' || method === 'POST' || method === 'DELETE')) {
-    if (user.role !== 'admin') { json(response, 403, { error: 'إدارة عروض العملاء متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'إدارة عروض العملاء متاحة للمدير والمحرر.' }); return; }
     const [, catalogId, action] = clientCatalogMatch;
     const existing = database.prepare('SELECT id FROM client_catalogs WHERE id = ?').get(catalogId);
     if (!existing) { json(response, 404, { error: 'عرض العميل غير موجود.' }); return; }
@@ -10792,7 +10796,7 @@ async function handleApi(request, response, url) {
   }
 
   if (pathname === '/api/client-inquiries' && method === 'GET') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'طلبات العملاء متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'طلبات العملاء متاحة للمدير والمحرر.' }); return; }
     const inquiries = database.prepare(`
       SELECT q.id, q.customer_name AS customerName, q.customer_contact AS customerContact,
         q.created_at AS createdAt, c.client_name AS clientName, c.company_name AS companyName,
@@ -10836,7 +10840,7 @@ async function handleApi(request, response, url) {
       return;
     }
     if (method === 'DELETE') {
-      if (user.role !== 'admin') { json(response, 403, { error: 'حذف السجلات متاح للمدير فقط.' }); return; }
+      if (!canManageData(user)) { json(response, 403, { error: 'حذف السجلات متاح للمدير والمحرر.' }); return; }
       database.exec('BEGIN IMMEDIATE');
       try {
         const existing = database.prepare('SELECT record_json, archived_at FROM influencers WHERE id = ?').get(id);
@@ -10869,7 +10873,7 @@ async function handleApi(request, response, url) {
 
   const influencerRestoreMatch = pathname.match(/^\/api\/influencers\/([^/]+)\/restore$/);
   if (influencerRestoreMatch && method === 'POST') {
-    if (user.role !== 'admin') { json(response, 403, { error: 'استعادة السجلات المؤرشفة متاحة للمدير فقط.' }); return; }
+    if (!canManageData(user)) { json(response, 403, { error: 'استعادة السجلات المؤرشفة متاحة للمدير والمحرر.' }); return; }
     const id = decodeURIComponent(influencerRestoreMatch[1]);
     database.exec('BEGIN IMMEDIATE');
     let restoredRecord;
@@ -10932,6 +10936,10 @@ async function handleApi(request, response, url) {
   }
 
   const userMatch = pathname.match(/^\/api\/users\/([^/]+)$/);
+  if (userMatch && method === 'DELETE' && user.role !== 'admin') {
+    json(response, 403, { error: 'إدارة المستخدمين متاحة للمدير فقط.' });
+    return;
+  }
   if (userMatch && method === 'PUT') {
     if (user.role !== 'admin') { json(response, 403, { error: 'إدارة المستخدمين متاحة للمدير فقط.' }); return; }
     const id = decodeURIComponent(userMatch[1]);

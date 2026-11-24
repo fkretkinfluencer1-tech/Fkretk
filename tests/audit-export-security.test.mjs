@@ -184,7 +184,7 @@ test('failed mutations are rolled back and recorded as failures', async () => {
   verifyDb.close();
 });
 
-test('every data export requires admin role and password confirmation on that request', async () => {
+test('every data export allows editors and requires the acting user password confirmation', async () => {
   const missing = await call('/api/export', { method: 'POST', body: {} });
   assert.equal(missing.response.status, 403);
   const wrongPassword = await call('/api/export', {
@@ -206,10 +206,15 @@ test('every data export requires admin role and password confirmation on that re
   await mustCall('/api/users', { method: 'POST', body: { username: 'audit-viewer', password: viewerPassword, role: 'viewer' } });
   const editorCookie = await login('audit-editor', editorPassword);
   const viewerCookie = await login('audit-viewer', viewerPassword);
-  for (const cookie of [editorCookie, viewerCookie]) {
-    const denied = await call('/api/export', { cookie, method: 'POST', body: confirmation });
-    assert.equal(denied.response.status, 403);
-  }
+  const editorExport = await call('/api/export', {
+    cookie: editorCookie,
+    method: 'POST',
+    body: { confirmationUsername: 'audit-editor', confirmationPassword: editorPassword }
+  });
+  assert.equal(editorExport.response.status, 200);
+  assert.equal(editorExport.body.rows.length, 1);
+  const viewerExport = await call('/api/export', { cookie: viewerCookie, method: 'POST', body: confirmation });
+  assert.equal(viewerExport.response.status, 403);
 
   const exported = await mustCall('/api/export', { method: 'POST', body: confirmation });
   assert.equal(exported.rows.length, 1);
@@ -249,9 +254,8 @@ test('every data export requires admin role and password confirmation on that re
   assert.equal(auditJson.includes(adminCredentials.password), false);
   assert.equal(auditJson.includes('confirmationUsername'), false);
 
-  for (const cookie of [editorCookie, viewerCookie]) {
-    assert.equal((await call('/api/audit', { cookie })).response.status, 403);
-  }
+  assert.equal((await call('/api/audit', { cookie: editorCookie })).response.status, 200);
+  assert.equal((await call('/api/audit', { cookie: viewerCookie })).response.status, 403);
   assert.equal((await call('/api/audit', { cookie: '' })).response.status, 401);
   assert.equal((await call(`/api/audit/${exportEvent.id}`, { method: 'DELETE' })).response.status, 404);
 
@@ -289,7 +293,15 @@ test('every data export requires admin role and password confirmation on that re
     [firstConflict.record.id, secondConflict.record.id].sort());
   assert.deepEqual(report.groups[0].influencers.map(item => item.name).sort(),
     ['Conflict Fixture One', 'Conflict Fixture Two']);
-  for (const cookie of [editorCookie, viewerCookie, '']) {
+  assert.equal((await call('/api/account-conflicts', { cookie: editorCookie })).response.status, 200);
+  const editorConflictExport = await call('/api/account-conflicts/export', {
+    cookie: editorCookie,
+    method: 'POST',
+    body: { confirmationUsername: 'audit-editor', confirmationPassword: editorPassword }
+  });
+  assert.equal(editorConflictExport.response.status, 200);
+  assert.equal(editorConflictExport.body.rows.length, 2);
+  for (const cookie of [viewerCookie, '']) {
     assert.equal((await call('/api/account-conflicts', { cookie })).response.status, cookie ? 403 : 401);
     const denied = await call('/api/account-conflicts/export', { cookie, method: 'POST', body: confirmation });
     assert.equal(denied.response.status, cookie ? 403 : 401);
