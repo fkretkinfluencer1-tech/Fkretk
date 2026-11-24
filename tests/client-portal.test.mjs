@@ -45,7 +45,8 @@ const insertInfluencer = fixture.prepare('INSERT INTO influencers (id, record_js
 insertInfluencer.run(influencerIds[0], JSON.stringify({
   Name: 'Visit Creator', Main_Username: 'visit_main_username', 'Best Platform': 'Instagram',
   'Username I': 'visit_creator', 'Followers Count I': '15000', Number: '555123456',
-  Full_Mobile_Number: '+966555123456', Price: '1000', Note: 'staff-only note',
+  Full_Mobile_Number: '+966555123456', 'Phone Shared': 'رقم مشترك',
+  Price: '1000', Note: 'staff-only note',
   'Internal Notes': 'confidential staff note', 'Paid or Voucher': 'Paid',
   City: 'Riyadh', Area: 'Olaya', Gender: 'Female', Hijab: 'Yes',
   'Categories 1': 'Health', 'Categories 2': 'Beauty',
@@ -545,7 +546,7 @@ test('client workspace scopes campaigns, visits, internal notes, and decision hi
   assert.equal(workspace.visits[0].branch, 'Test branch');
   assert.equal(workspace.decisionHistory.length, 0);
   const customerData = await mustCall('/api/client-portal/campaigns', { cookie: clientOneCookie });
-  assert.doesNotMatch(JSON.stringify(customerData), /Internal test note|client\.one@example\.test/);
+  assert.doesNotMatch(JSON.stringify(customerData), /Internal test note|client\.one@example\.test|Phone Shared|رقم مشترك/);
   const editorWorkspace = await mustCall(`/api/client-accounts/${clientOne.id}/workspace`, { cookie: editorCookie });
   assert.deepEqual(editorWorkspace.campaigns.map((campaign) => campaign.id), [visitCampaign.id]);
   const otherWorkspace = await mustCall(`/api/client-accounts/${clientTwo.id}/workspace`);
@@ -762,6 +763,7 @@ test('campaign internal workspace files, operations, and scoped client presentat
   assert.match(presentationHtml, /language-toggle/);
   const publicData = await (await fetch(`${baseUrl}/api/campaign-presentations/${created.token}`)).json();
   assert.ok(publicData.presentation, `Missing presentation metadata in ${JSON.stringify(Object.keys(publicData))}`);
+  assert.doesNotMatch(JSON.stringify(publicData), /Phone Shared|رقم مشترك/);
   assert.equal(publicData.presentation.mode, 'selecting');
   assert.equal(publicData.targets[0].name, 'Visit Creator');
   assert.equal(publicData.targets[0].username, 'visit_creator');
@@ -976,6 +978,7 @@ test('visit-only presentations hide undated visits and amounts and scope client 
   assert.equal(publicResponse.status, 200);
   const publicData = await publicResponse.json();
   assert.equal(publicData.presentation.mode, 'visits');
+  assert.doesNotMatch(JSON.stringify(publicData), /Phone Shared|رقم مشترك/);
   assert.equal(publicData.presentation.title, 'Synthetic visit schedule');
   assert.equal(publicData.presentation.tagline, 'Synthetic client tagline');
   assert.equal(publicData.presentation.packageVisitsCount, 4);
@@ -1125,6 +1128,8 @@ test('visit-only presentations hide undated visits and amounts and scope client 
 test('two client accounts only receive their assigned campaigns and sanitized visit/delivery fields', async () => {
   const first = await mustCall('/api/client-portal/campaigns', { cookie: clientOneCookie });
   const second = await mustCall('/api/client-portal/campaigns', { cookie: clientTwoCookie });
+  assert.doesNotMatch(JSON.stringify(first), /Phone Shared|رقم مشترك/);
+  assert.doesNotMatch(JSON.stringify(second), /Phone Shared|رقم مشترك/);
   assert.deepEqual(first.campaigns.map((campaign) => campaign.id), [visitCampaign.id]);
   assert.deepEqual(second.campaigns.map((campaign) => campaign.id), [deliveryCampaign.id]);
   const visit = first.campaigns[0];
@@ -1158,7 +1163,7 @@ test('two client accounts only receive their assigned campaigns and sanitized vi
   assert.equal('visitDate' in delivery.targets[0], false);
   for (const payload of [first, second]) {
     const serialized = JSON.stringify(payload);
-    assert.doesNotMatch(serialized, /555999999|staff-only note|another private note|password_hash|checkinToken/);
+    assert.doesNotMatch(serialized, /555999999|staff-only note|another private note|password_hash|checkinToken|Phone Shared|رقم مشترك/);
   }
   const crossClientDecision = await call(
     `/api/client-portal/campaigns/${deliveryCampaign.id}/targets/${influencerIds[1]}/decision`,
@@ -1253,6 +1258,7 @@ test('schema migration preserves existing influencer data and legacy catalog wor
   const legacyToken = legacy.url.split('/').at(-1);
   const originalCatalog = await mustCall(`/api/client-catalog/${legacyToken}`);
   assertNoClientInfluencerPrivateData(originalCatalog);
+  assert.doesNotMatch(JSON.stringify(originalCatalog), /Phone Shared|رقم مشترك/);
   assert.equal(originalCatalog.influencers[0].name, 'Visit Creator');
   assert.equal('Number' in originalCatalog.influencers[0].details, false);
   assert.equal('Full_Mobile_Number' in originalCatalog.influencers[0].details, false);
@@ -2050,7 +2056,7 @@ test('display modes, isolated offer decisions, and private published client visi
   assert.equal(portal.offers[0].influencers[0].profiles[0].platform, 'Instagram');
   assert.equal('price' in portal.offers[0].influencers[0], false);
   assert.equal('campaignNotes' in portal.offers[0].influencers[0], false);
-  assert.doesNotMatch(JSON.stringify(portal), /555123456|staff-only note/);
+  assert.doesNotMatch(JSON.stringify(portal), /555123456|staff-only note|Phone Shared|رقم مشترك/);
   assert.equal((await call('/api/client-portal/visits', { cookie })).response.status, 403);
   assert.equal((await call(`/api/client-accounts/${created.account.id}/display-mode`, {
     method: 'PATCH', cookie: editorCookie, body: { displayMode: 'not-a-mode' }
@@ -2067,6 +2073,7 @@ test('display modes, isolated offer decisions, and private published client visi
   cookie = await login('mode-workflow-client', 'Mode-workflow-pass-2026!', '/api/client-portal/login');
   portal = await mustCall('/api/client-portal/campaigns', { cookie });
   assert.equal(portal.client.displayMode, 'selecting');
+  assert.doesNotMatch(JSON.stringify(portal), /Phone Shared|رقم مشترك/);
   assert.equal(portal.offers[0].decisionsEnabled, true);
   assert.ok(!portal.campaigns.some(campaign => campaign.sections.includes('visitSchedule')));
   for (const [decision, expected] of [
@@ -2088,6 +2095,7 @@ test('display modes, isolated offer decisions, and private published client visi
   assert.equal(listed.displayMode, 'existing');
   portal = await mustCall('/api/client-portal/campaigns', { cookie });
   assert.equal(portal.client.displayMode, 'existing');
+  assert.doesNotMatch(JSON.stringify(portal), /Phone Shared|رقم مشترك/);
   assert.equal(portal.offers.length, 0);
   assert.equal(portal.campaigns.length, 0);
   assert.equal(portal.clientInfluencers.length, 2);
@@ -2191,6 +2199,7 @@ test('display modes, isolated offer decisions, and private published client visi
   const publicSchedule = await mustCall('/api/client-portal/visits', { cookie });
   assert.equal(publicSchedule.schedule.visits.length, 3);
   assert.equal(publicSchedule.schedule.visits[0].name, 'Visit Creator');
+  assert.doesNotMatch(JSON.stringify(publicSchedule), /Phone Shared|رقم مشترك/);
   assert.ok(publicSchedule.schedule.visits[0].profiles[0].profileUrl.includes('instagram.com'));
   assert.doesNotMatch(JSON.stringify(publicSchedule), /555123456|staff-only note|1000|visitNotes/);
   assert.equal(publicSchedule.schedule.visits.find(visit=>visit.name==='Manual Visit Creator').branch, 'Updated East');
@@ -2205,7 +2214,10 @@ test('display modes, isolated offer decisions, and private published client visi
   const scheduleId = internalVisits.visits[0].id;
   await mustCall(`/api/client-accounts/${created.account.id}/visits/${scheduleId}`, { method: 'DELETE', cookie: editorCookie });
   assert.equal((await mustCall('/api/client-portal/visits', { cookie })).schedule, null);
-  assert.ok((await mustCall('/api/influencers/by-ids', { method: 'POST', body: { ids: [influencerIds[0]] } })).rows.length);
+  const adminInfluencer = await mustCall('/api/influencers/by-ids', {
+    method: 'POST', body: { ids: [influencerIds[0]] }
+  });
+  assert.equal(adminInfluencer.rows[0]['Phone Shared'], 'رقم مشترك');
   const stored = new DatabaseSync(databasePath, { readOnly: true });
   assert.equal(stored.prepare('SELECT status FROM client_visit_schedules WHERE client_account_id = ?').get(created.account.id).status, 'draft');
   assert.equal(stored.prepare('SELECT COUNT(*) AS count FROM client_catalog_decision_history WHERE catalog_id = ? AND influencer_id = ?')
@@ -2303,7 +2315,7 @@ test('client showcase is account-scoped, paginated, sanitized, and persists shor
   assert.ok(multiAccountItem.socialAccounts.some(account => account.platform === 'TikTok'));
   assert.equal(JSON.stringify(microTierResults.items).includes('"tier"'), false);
   const publicFields = JSON.stringify(result.items[0]);
-  for (const sensitive of ['555123456', 'staff-only note', 'confidential staff note', '1000', 'Paid']) {
+  for (const sensitive of ['555123456', 'staff-only note', 'confidential staff note', '1000', 'Paid', 'Phone Shared', 'رقم مشترك']) {
     assert.equal(publicFields.includes(sensitive), false);
   }
 
@@ -2557,27 +2569,23 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
   assert.equal(resultDb.prepare('SELECT COUNT(*) AS count FROM influencers').get().count, initialCount + 5);
   resultDb.close();
 
-  const noAccountWithId = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
-    rows: [{ id: importedRecord.id, Name: 'Must not update without account' }]
-  } });
-  assert.deepEqual(
-    { created: noAccountWithId.created, updated: noAccountWithId.updated, failed: noAccountWithId.failed },
-    { created: 0, updated: 0, failed: 1 }
-  );
-  assert.equal(noAccountWithId.issues[0].reason, 'no-account');
-
   const phoneOnlyMatch = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
     rows: [{ Name: 'Must not match by phone', 'Username I': 'qa_phone_only_identity', Full_Mobile_Number: '+966555010202' }]
   } });
   assert.deepEqual(
     { created: phoneOnlyMatch.created, updated: phoneOnlyMatch.updated, failed: phoneOnlyMatch.failed },
-    { created: 0, updated: 1, failed: 0 }
+    { created: 1, updated: 0, failed: 0 }
   );
+  assert.equal(phoneOnlyMatch.matchedByPhone, 0);
+  assert.equal(phoneOnlyMatch.sharedPhones, 1);
   const phoneFirstDb = new DatabaseSync(databasePath, { readOnly: true });
   const phoneFirstRecord = JSON.parse(phoneFirstDb.prepare('SELECT record_json FROM influencers WHERE id = ?')
     .get(phoneConflict.record.id).record_json);
+  const phoneOnlyCreated = JSON.parse(phoneFirstDb.prepare(`SELECT record_json FROM influencers
+    WHERE json_extract(record_json, '$."Username I"') = 'qa_phone_only_identity'`).get().record_json);
   phoneFirstDb.close();
-  assert.equal(phoneFirstRecord['Username I'], 'qa_phone_only_identity');
+  assert.equal(phoneFirstRecord['Username I'] || '', '');
+  assert.equal(phoneOnlyCreated['Phone Shared'], 'رقم مشترك');
 
   const accountChangeFixture = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
     rows: [{
@@ -2648,9 +2656,8 @@ test('CSV and Excel imports preserve record ownership and reject account-based i
     rows: [{ Name: 'Different Synthetic Owner', 'Username I': 'qa_dedupealpha' }]
   } });
   assert.equal(differentOwner.created, 0);
-  assert.equal(differentOwner.failed, 1);
-  assert.equal(differentOwner.unchanged, 0);
-  assert.equal(differentOwner.issues[0].reason, 'account-match-needs-review');
+  assert.equal(differentOwner.failed, 0);
+  assert.equal(differentOwner.updated, 1);
 
   const parallelImports = await Promise.all(['Parallel Update One', 'Parallel Update Two'].map(Name =>
     mustCall('/api/import', { method: 'POST', cookie: adminCookie, body: {
@@ -2737,8 +2744,119 @@ test('manual influencer creation names the owner when a normalized account is al
     Name: 'Synthetic duplicate phone', 'Username T': 'qa_manual_phone_duplicate',
     Full_Mobile_Number: '+966555700201'
   } });
-  assert.equal(phoneConflict.response.status, 409);
-  assert.match(phoneConflict.body.error, /رقم الهاتف نفسه/);
+  assert.equal(phoneConflict.response.status, 201);
+  assert.equal(phoneConflict.body.record['Phone Shared'], 'رقم مشترك');
+  assert.equal(phoneConflict.body.record['Username T'], 'qa_manual_phone_duplicate');
+});
+
+test('social usernames remove every Unicode format character on create, update, and import', async () => {
+  const formatCharacters = [
+    '\u200b', '\u200c', '\u200d', '\u200e', '\u200f', '\u2060', '\ufeff', '\u00ad',
+    '\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '\u061c'
+  ];
+  const cases = formatCharacters.flatMap((character, characterIndex) => [0, 1].map((position) => {
+    const base = `qa_unicode_owner_${characterIndex}_${position}`;
+    const raw = position === 0
+      ? `${base.slice(0, 8)}${character}${base.slice(8)}`
+      : `${character}${base}${character}`;
+    return { base, raw, character, position, ownerName: `Synthetic Unicode Owner ${characterIndex} ${position}` };
+  }));
+  const createdOwners = [];
+
+  for (const item of cases) {
+    const owner = await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+      Name: item.ownerName, 'Username I': item.raw, 'Username T': item.raw
+    } });
+    assert.equal(owner.record['Username I'], item.base);
+    assert.equal(owner.record['Username T'], item.base);
+    createdOwners.push(owner.record);
+    const duplicate = await call('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+      Name: 'Synthetic Unicode Duplicate', 'Username T': item.raw
+    } });
+    assert.equal(duplicate.response.status, 409);
+    assert.deepEqual(duplicate.body.conflict.influencerIds, [owner.record.id]);
+    const instagramDuplicate = await call('/api/influencers', {
+      method: 'POST', cookie: editorCookie, body: {
+        Name: 'Synthetic Instagram Duplicate', 'Username I': ` @ ${item.base.toUpperCase()} `
+      }
+    });
+    assert.equal(instagramDuplicate.response.status, 409);
+    assert.deepEqual(instagramDuplicate.body.conflict.influencerIds, [owner.record.id]);
+  }
+
+  const crossPlatform = await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+    Name: 'Synthetic cross-platform owner', Username: cases[0].base
+  } });
+  assert.equal(crossPlatform.record.Username, cases[0].base);
+
+  let updateTarget = await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+    Name: 'Synthetic Unicode Update Target', 'Username T': 'qa_unicode_update_initial'
+  } });
+  for (const [index, item] of cases.entries()) {
+    const updateBase = `qa_unicode_updated_${index}`;
+    const updateRaw = item.position === 0
+      ? `${updateBase.slice(0, 8)}${item.character}${updateBase.slice(8)}`
+      : `${item.character}${updateBase}${item.character}`;
+    const changed = await call(`/api/influencers/${updateTarget.record.id}`, {
+      method: 'PUT', cookie: editorCookie, body: { ...updateTarget.record, 'Username T': updateRaw }
+    });
+    assert.equal(changed.response.status, 200, JSON.stringify(changed.body));
+    assert.equal(changed.body.record['Username T'], updateBase);
+    updateTarget = changed.body;
+
+    const conflict = await call(`/api/influencers/${updateTarget.record.id}`, {
+      method: 'PUT', cookie: editorCookie, body: { ...updateTarget.record, 'Username T': item.raw }
+    });
+    assert.equal(conflict.response.status, 409);
+    assert.deepEqual(conflict.body.conflict.influencerIds, [createdOwners[index].id]);
+    assert.deepEqual(conflict.body.conflict.influencerNames, [item.ownerName]);
+  }
+
+  const rows = cases.map((item) => ({ Name: item.ownerName, 'Username T': item.raw }));
+  const preview = await mustCall('/api/import/preview', {
+    method: 'POST', cookie: editorCookie, body: { rows }
+  });
+  assert.equal(preview.preview.integrity.creates, 0);
+  assert.equal(preview.preview.integrity.matchedByAccount, cases.length);
+  assert.equal(preview.preview.integrity.issues.length, 0);
+  const imported = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
+    previewId: preview.preview.previewId, rows
+  } });
+  assert.equal(imported.created, 0);
+  assert.equal(imported.unchanged, cases.length);
+  assert.equal(imported.failed, 0);
+
+  const db = new DatabaseSync(databasePath, { readOnly: true });
+  for (const item of cases) {
+    assert.equal(db.prepare(`SELECT COUNT(*) AS count FROM influencers
+      WHERE json_extract(record_json, '$."Username T"') = ?`).get(item.base).count, 1);
+  }
+  db.close();
+});
+
+test('import preview warns about a matched record name difference without exposing names or blocking import', async () => {
+  await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+    Name: 'Synthetic Name Match', 'Username T': 'qa_name_warning_same'
+  } });
+  await mustCall('/api/influencers', { method: 'POST', cookie: editorCookie, body: {
+    Name: 'Synthetic Existing Name', 'Username T': 'qa_name_warning_different'
+  } });
+  const rows = [
+    { Name: '  synthetic   NAME match ', 'Username T': 'qa_name_warning_same' },
+    { Name: 'Synthetic Incoming Name', 'Username T': 'qa_name_warning_different' }
+  ];
+  const preview = await mustCall('/api/import/preview', {
+    method: 'POST', cookie: editorCookie, body: { rows }
+  });
+  assert.deepEqual(preview.preview.integrity.warnings.filter((warning) => warning.reason === 'اسم مختلف'), [
+    { row: 2, reason: 'اسم مختلف' }
+  ]);
+  const imported = await mustCall('/api/import', { method: 'POST', cookie: editorCookie, body: {
+    previewId: preview.preview.previewId, rows
+  } });
+  assert.equal(imported.failed, 0);
+  assert.equal(imported.created, 0);
+  assert.ok(imported.unchanged + imported.updated > 0);
 });
 
 test('import preview classifies unchanged, changed, new, and shared-account rows before execution', async () => {

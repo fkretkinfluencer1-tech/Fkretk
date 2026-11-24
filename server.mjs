@@ -2500,7 +2500,7 @@ function normalizeImportPlatform(value) {
 }
 
 function normalizedImportUsername(value) {
-  const source = String(value || '').normalize('NFKC').trim();
+  const source = String(value || '').normalize('NFKC').replace(/\p{Cf}/gu, '').trim();
   if (!source) return '';
   let handle = source;
   const isProfileUrl = /^(?:https?:\/\/|(?:www\.)?(?:instagram\.com|tiktok\.com|snapchat\.com)(?:\/|$))/i.test(source);
@@ -2522,7 +2522,19 @@ function normalizedImportUsername(value) {
       return '';
     }
   }
-  return handle.normalize('NFKC').replace(/^@+/, '').replace(/\s+/gu, '').toLocaleLowerCase('en-US');
+  return handle.normalize('NFKC').replace(/[\p{Cf}\s@]+/gu, '').toLocaleLowerCase('en-US');
+}
+
+function normalizePlatformUsernameFields(record) {
+  for (const field of influencerImportAccountFields) {
+    for (const key of [field.username, ...field.aliases]) {
+      if (!Object.hasOwn(record, key) || String(record[key] ?? '').trim() === '') continue;
+      const username = normalizedImportUsername(record[key]);
+      if (!username) throw Object.assign(new Error('invalid-username'), { status: 400 });
+      record[key] = username;
+    }
+  }
+  return record;
 }
 
 function normalizedPhotoIdentityText(value) {
@@ -2726,14 +2738,8 @@ function hasImportIdentity(record) {
 }
 
 function normalizedImportRecord(input) {
-  const record = normalizeRecord({ ...input });
+  const record = normalizePlatformUsernameFields(normalizeRecord({ ...input }));
   for (const field of influencerImportAccountFields) {
-    const rawUsername = String(record[field.username] ?? '').trim();
-    if (rawUsername) {
-      const username = normalizedImportUsername(rawUsername);
-      if (!username) throw new Error('invalid-username');
-      record[field.username] = username;
-    }
     const rawFollowers = String(record[field.followers] ?? '').trim();
     if (rawFollowers) {
       const followers = parseImportedFollowerCount(rawFollowers);
@@ -4089,7 +4095,9 @@ function hasSuppliedImportChanges(existing, canonicalInput, incoming) {
   return false;
 }
 
-function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreArchivedMatches = false } = {}) {
+function previewInfluencerImport(rows, {
+  allowSensitiveChanges = false, restoreArchivedMatches = false, includeNameWarnings = false
+} = {}) {
   const savedRecords = database.prepare('SELECT id, record_json, phone_key, archived_at FROM influencers').all().map((row) => ({
     id: row.id, record: JSON.parse(row.record_json || '{}'), phoneKey: row.phone_key, archivedAt: row.archived_at
   }));
@@ -4180,6 +4188,11 @@ function previewInfluencerImport(rows, { allowSensitiveChanges = false, restoreA
 
       const existingId = owners.values().next().value || '';
       const existing = existingId ? byId.get(existingId.toLowerCase()) : null;
+      const incomingName = normalizedPhotoIdentityText(incoming.Name);
+      const existingName = normalizedPhotoIdentityText(existing?.record.Name);
+      if (includeNameWarnings && incomingName && existingName && incomingName !== existingName) {
+        result.warnings.push({ row, reason: 'اسم مختلف' });
+      }
       if (existing?.archivedAt && !restoreArchivedMatches) {
         reject('archived-match-needs-restore'); continue;
       }
@@ -9386,7 +9399,7 @@ async function handleApi(request, response, url) {
   if (pathname === '/api/influencers' && method === 'POST') {
     if (!requireRole(user, ['admin', 'editor'])) { json(response, 403, { error: 'صلاحيتك لا تسمح بإضافة السجلات.' }); return; }
     const input = await readJson(request);
-    const record = normalizeRecord(input);
+    const record = normalizePlatformUsernameFields(normalizeRecord(input));
     for (const field of influencerImportAccountFields) {
       const rawHandle = input[field.username]
         || field.aliases.map((alias) => input[alias]).find((value) => String(value || '').trim());
@@ -9443,6 +9456,10 @@ async function handleApi(request, response, url) {
         conflict: accountConflict
       });
       return;
+    }
+    const phoneKey = normalizePhone(record);
+    if (phoneKey && database.prepare('SELECT 1 FROM influencers WHERE phone_key = ? LIMIT 1').get(phoneKey)) {
+      record['Phone Shared'] = 'رقم مشترك';
     }
     const id = randomBytes(16).toString('hex');
     const saved = saveInfluencer(id, record);
@@ -9788,7 +9805,8 @@ async function handleApi(request, response, url) {
     const preview = previewProfileImageImport(rows, body.imageArchiveBase64 || '');
     preview.integrity = hasIdentity ? previewInfluencerImport(normalized.rows, {
       allowSensitiveChanges: body.allowSensitiveChanges === true && user.role === 'admin',
-      restoreArchivedMatches: body.restoreArchivedMatches === true
+      restoreArchivedMatches: body.restoreArchivedMatches === true,
+      includeNameWarnings: true
     }) : {
       total: rows.length, valid: 0, conflicts: rows.length, duplicates: 0, creates: 0,
       updates: 0, unchanged: 0, skipped: rows.length, matchedByPhone: 0, matchedByAccount: 0,
@@ -10118,10 +10136,16 @@ async function handleApi(request, response, url) {
             for (const id of matches) accountOwners.add(id);
           }
           if (accountOwners.size > 1) throw new Error('identity-conflict');
-          const existing = accountOwners.size
+          let existing = accountOwners.size
             ? recordsById.get([...accountOwners][0].toLowerCase()) || null
             : null;
           if (accountOwners.size && !existing) throw new Error('identity-conflict');
+          if (existing && accountOwners.size) {
+            const existingKeys = new Set(accountKeys(existing.record).map(([key]) => key));
+            if (!incoming.Name && identities.some(([key]) => !existingKeys.has(key))) {
+              throw new Error('account-match-needs-review');
+            }
+          }
           if (existing?.archivedAt && body.restoreArchivedMatches !== true) {
             throw new Error('archived-match-needs-restore');
           }
@@ -10793,7 +10817,7 @@ async function handleApi(request, response, url) {
       if (!exists) { json(response, 404, { error: 'السجل غير موجود.' }); return; }
       if (exists.archived_at) { json(response, 409, { error: 'أعد السجل من الأرشيف قبل تعديله.' }); return; }
       const input = await readJson(request);
-      const record = normalizeRecord(input);
+      const record = normalizePlatformUsernameFields(normalizeRecord(input));
       const previous = JSON.parse(exists.record_json);
       if (!Object.hasOwn(input, 'Influencer Status')) {
         record['Influencer Status'] = previous['Influencer Status'] === 'Inactive' ? 'Inactive' : 'Active';
