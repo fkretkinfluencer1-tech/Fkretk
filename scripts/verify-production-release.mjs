@@ -291,8 +291,14 @@ try {
   const loginPage = await fetch(`${baseUrl}/`);
   assert.equal(loginPage.status, 200);
   const loginHtml = await loginPage.text();
-  assert.match(loginHtml, /<p class="auth-contact-note">تواصل مع مدير النظام<\/p>/u);
-  assert.doesNotMatch(loginHtml, /<(?:a|button)\b[^>]*>[\s\S]{0,160}تواصل مع مدير النظام/iu);
+  const contactNote = '<p class="auth-contact-note">تواصل مع مدير النظام</p>';
+  const contactNotePosition = loginHtml.indexOf(contactNote);
+  assert.notEqual(contactNotePosition, -1);
+  for (const match of loginHtml.matchAll(/<(a|button)\b[^>]*>[\s\S]*?<\/\1>/giu)) {
+    const elementEnd = match.index + match[0].length;
+    assert.ok(contactNotePosition < match.index || contactNotePosition >= elementEnd,
+      'The system-administrator note must not be inside an interactive element.');
+  }
   const protectedPaths = [
     '/data/', '/backups/', '/.env', '/server.mjs',
     '/data/fikratak.sqlite', '/data/fikratak.sqlite-wal', '/data/fikratak.sqlite-shm'
@@ -631,7 +637,7 @@ try {
       showInfluencerDetails: true,
       showSocialAccounts: true,
       showFollowers: true,
-      showAdditionalDetails: false,
+      showAdditionalDetails: true,
       showCompanyWork: false
     },
     companyWorkVideoIds: [],
