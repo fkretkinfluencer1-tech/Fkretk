@@ -38,6 +38,9 @@ assert.equal(manifest.sourceCommit, execFileSync('git', ['rev-parse', 'HEAD'], {
 }).trim());
 assert.deepEqual(manifest.outOfZipDocuments, ['HOSTING-SETUP-AR.md']);
 assert.ok(!manifest.files.includes('HOSTING-SETUP-AR.md'));
+assert.ok(!manifest.files.includes('production-release.zip'));
+assert.ok(!manifest.files.includes('SHA256SUMS.txt'));
+assert.ok(manifest.files.every((path) => !path.includes('\\') && !path.startsWith('/')));
 for (const path of requiredFiles) {
   assert.ok(manifest.files.includes(path), `Release manifest is missing ${path}.`);
   await stat(join(releaseDir, path));
